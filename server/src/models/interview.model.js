@@ -1,36 +1,47 @@
-import mongoose from "mongoose";
+import  mongoose from "mongoose";
 
-
-const userSchema= new mongoose.Schema({
-    email: {
-        type: String,
-        required: true,
-        unique: true
+const interviewSchema = new mongoose.Schema(
+  {
+    application: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "application",
+        required: true 
     },
-    name: {
-        type: String,
-        required: true
+    interviewer: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "user", 
+        required: true 
     },
-    password: {
-        type: String,
-        required: true,
-        select: false
+    date: { 
+        type: Date, 
+        required: true 
     },
-    role: {
-        type: String,
-        enum: ["admin", "recruiter", "hiring_manager"],
-        default: "recruiter"
+    time: { 
+        type: String, 
+        required: true 
     },
-    refreshToken:{
+    mode: { 
         type: String,
-        default: "",
-        select: false
-    }
+        enum: ["online", "offline"], 
+        default: "online"
+    },
+    meetingLink: { 
+        type: String, 
+        default: "" 
+    },
+    feedback: { 
+        type: String,
+         default: ""
+    },
+    result: { 
+        type: String, 
+        enum: ["pending", "pass", "fail"],
+        default: "pending" 
+    },
+  },
+  { timestamps: true }
+);
 
-}, {
-    timestamps: true
-})
+const interviewModel= mongoose.model("Interview", interviewSchema);
 
-const userModel= mongoose.model('user',  userSchema)
-
-export default userModel
+export default interviewModel
