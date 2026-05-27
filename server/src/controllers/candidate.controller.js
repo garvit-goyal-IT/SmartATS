@@ -31,6 +31,17 @@ export const uploadResume = async (req, res) => {
 
         const parsedData= await parseResumeWithAI(resumeText, jobId)
 
+        if(!parsedData.personalInfo.email) {
+            const emailMatch = resumeText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+            if(emailMatch) parsedData.personalInfo.email = emailMatch[0]
+        }
+
+        if(!parsedData.personalInfo.phone) {
+            const phoneMatch = resumeText.match(/[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}/)
+            if(phoneMatch) parsedData.personalInfo.phone = phoneMatch[0]
+        }
+        
+
         const {isDuplicate, duplicateOf}= await checkDuplicate(Candidate, parsedData.personalInfo)
 
         const candidate= await Candidate.create({

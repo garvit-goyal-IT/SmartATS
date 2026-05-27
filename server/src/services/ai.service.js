@@ -1,170 +1,140 @@
-import { GoogleGenAI, Type } from "@google/genai"
+import Groq from "groq-sdk"
 
+const getAI = () => new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-const MODEL_NAME = "gemini-2.5-flash" 
-
-// -----RESUME PARSER----------------------------------------
-export const parseResumeWithAI = async (resumeText) => {
-    const response = await ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: `Extract structured information from this resume:\n\n${resumeText}`,
-        config: {
-            systemInstruction: "You are an expert HR assistant responsible for extracting resume details accurately.",
-
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    personalInfo: {
-                        type: Type.OBJECT,
-                        properties: {
-                            name: { type: Type.STRING },
-                            email: { type: Type.STRING },
-                            phone: { type: Type.STRING },
-                            location: { type: Type.STRING }
-                        },
-                        required: ["name", "email"]
-                    },
-                    skills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    experience: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                title: { type: Type.STRING },
-                                company: { type: Type.STRING },
-                                duration: { type: Type.STRING },
-                                description: { type: Type.STRING }
-                            },
-                            required: ["title", "company"]
-                        }
-                    },
-                    education: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                degree: { type: Type.STRING },
-                                institution: { type: Type.STRING },
-                                year: { type: Type.INTEGER }
-                            }
-                        }
-                    },
-                    totalExperience: { type: Type.INTEGER },
-                    keywords: { type: Type.ARRAY, items: { type: Type.STRING } }
-                },
-                required: ["personalInfo", "skills", "experience", "totalExperience", "keywords"]
-            }
-        }
+// ─── Helper ───────────────────────────────────────────────
+const askGroq = async (prompt) => {
+    const ai = getAI()
+    const response = await ai.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.1
     })
-
-    return JSON.parse(response.text)
+    const raw = response.choices[0].message.content
+    const cleaned = raw.replace(/```json|```/g, "").trim()
+    return JSON.parse(cleaned)
 }
 
-// ------------- Candidate Scorer ----------------------------------
-export const scoreCandidateWithAI = async (parsedResume, job) => {
+// ─── Resume Parser ────────────────────────────────────────
+export const parseResumeWithAI = async (resumeText) => {
     const prompt = `
-Score this candidate for the target job profile.
+You are an expert HR assistant. Extract structured information from this resume.
+Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
+
+Resume:
+${resumeText}
+
+Return exactly this structure:
+{
+  "personalInfo": {
+    "name": "full name",
+    "email": "email address",
+    "phone": "phone number",
+    "location": "city, country"
+  },
+  "skills": ["skill1", "skill2"],
+  "experience": [
+    {
+      "title": "job title",
+      "company": "company name",
+      "duration": "2 years",
+      "description": "brief description"
+    }
+  ],
+  "education": [
+    {
+      "degree": "degree name",
+      "institution": "university name",
+      "year": 2022
+    }
+  ],
+  "totalExperience": 3,
+  "keywords": ["keyword1", "keyword2"]
+}
+`
+    return await askGroq(prompt)
+}
+
+// ─── Candidate Scorer ─────────────────────────────────────
+export const scoreCandidateWithAI = async (parsedResume, job) => {
+    
+    // handle array or object
+    const data = Array.isArray(parsedResume) ? parsedResume[0] : parsedResume
+
+    const prompt = `
+You are an expert technical recruiter. Score this candidate for the job.
+Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
+
 Job Title: ${job.title}
 Required Skills: ${job.requirements.join(", ")}
 Nice to Have: ${job.niceToHave?.join(", ") || "none"}
 Experience Required: ${job.experienceRequired} years
 
-Candidate Skills: ${parsedResume.skills.join(", ")}
-Candidate Total Experience: ${parsedResume.totalExperience} years
-Candidate Keywords: ${parsedResume.keywords.join(", ")}
+Candidate Skills: ${(data.skills || []).join(", ")}
+Candidate Total Experience: ${data.totalExperience || 0} years
+
+Return exactly this structure:
+{
+  "fitScore": 85,
+  "matchedSkills": ["React", "Node.js"],
+  "missingSkills": ["Docker", "AWS"],
+  "extraSkills": ["Vue.js"],
+  "scoreBreakdown": {
+    "skillMatch": 80,
+    "experienceMatch": 90,
+    "keywordOverlap": 75
+  },
+  "recommendation": "Strong candidate. Has 8/10 required skills.",
+  "shortlistSuggestion": true
+}
 `
-
-    const response = await ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: prompt,
-        config: {
-            systemInstruction: "You are an expert technical recruiter matching candidates against job specifications.",
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    fitScore: { type: Type.INTEGER },
-                    matchedSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    missingSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    extraSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    scoreBreakdown: {
-                        type: Type.OBJECT,
-                        properties: {
-                            skillMatch: { type: Type.INTEGER },
-                            experienceMatch: { type: Type.INTEGER },
-                            keywordOverlap: { type: Type.INTEGER }
-                        },
-                        required: ["skillMatch", "experienceMatch", "keywordOverlap"]
-                    },
-                    recommendation: { type: Type.STRING },
-                    shortlistSuggestion: { type: Type.BOOLEAN }
-                },
-                required: ["fitScore", "matchedSkills", "missingSkills", "scoreBreakdown", "recommendation", "shortlistSuggestion"]
-            }
-        }
-    })
-
-    return JSON.parse(response.text)
+    return await askGroq(prompt)
 }
 
-// --- Duplicate Detector  -----
+// ─── Duplicate Detector ───────────────────────────────────
 export const checkDuplicate = async (Candidate, personalInfo) => {
     const byEmail = await Candidate.findOne({
         "personalInfo.email": personalInfo.email
     })
-    if (byEmail) return { isDuplicate: true, duplicateOf: byEmail._id }
+    if(byEmail) return { isDuplicate: true, duplicateOf: byEmail._id }
 
-    if (personalInfo.phone) {
+    if(personalInfo.phone) {
         const byPhone = await Candidate.findOne({
             "personalInfo.phone": personalInfo.phone
         })
-        if (byPhone) return { isDuplicate: true, duplicateOf: byPhone._id }
+        if(byPhone) return { isDuplicate: true, duplicateOf: byPhone._id }
     }
 
     return { isDuplicate: false, duplicateOf: null }
 }
 
-// --------- Keyword Extractor ---------------------
+// ─── Keyword Extractor ────────────────────────────────────
 export const extractKeywords = async (text) => {
-    const response = await ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: `Extract the top 15 professional keywords from this resume text:\n\n${text.substring(0, 4000)}`,
-        config: {
-            systemInstruction: "Extract professional keywords as a clean flat list.",
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-            }
-        }
-    })
+    const prompt = `
+Extract the top 15 professional keywords from this resume.
+Return ONLY a JSON array of strings. No explanation, no markdown.
+Example: ["React", "Node.js", "MongoDB"]
 
-    return JSON.parse(response.text)
+Resume: ${text.substring(0, 2000)}
+`
+    return await askGroq(prompt)
 }
 
-// ------------ Smart Shortlisting --------------------
+// ─── Smart Shortlisting ───────────────────────────────────
 export const getShortlistSuggestions = async (applications) => {
-    const response = await ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: `Analyze these candidate profiles and select the top options for shortlisting:\n\n${JSON.stringify(applications)}`,
-        config: {
-            systemInstruction: "You are a recruiting assistant making data-driven selections for initial screen rounds.",
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        candidateId: { type: Type.STRING },
-                        reason: { type: Type.STRING }
-                    },
-                    required: ["candidateId", "reason"]
-                }
-            }
-        }
-    })
+    const prompt = `
+You are a recruiter assistant. From these candidates suggest the top ones to shortlist.
+Return ONLY a JSON array. No explanation, no markdown.
 
-    return JSON.parse(response.text)
+Candidates: ${JSON.stringify(applications)}
+
+Return exactly this structure:
+[
+  {
+    "candidateId": "id here",
+    "reason": "why this candidate should be shortlisted"
+  }
+]
+`
+    return await askGroq(prompt)
 }

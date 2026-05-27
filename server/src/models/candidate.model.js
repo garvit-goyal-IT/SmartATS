@@ -2,14 +2,13 @@ import mongoose from "mongoose";
 
 const candidateSchema= new mongoose.Schema({
     personalInfo: {
-         name: {
+        name: {
         type: String,
-        required: true
+        default: ""
         },
         email :{
         type: String,
-        required: true,
-        unique: true
+        default: ""
          },
         location:{
             type: String,
@@ -29,7 +28,7 @@ const candidateSchema= new mongoose.Schema({
         type: String,
         default: ""
     },
-    parsedData: [{
+    parsedData: {
         skills: [{type:String}],
         experience: [{
             title: {type:String},
@@ -46,7 +45,7 @@ const candidateSchema= new mongoose.Schema({
             type:Number,
             default: 0
         }
-    }],
+    },
     keywords: [{type:String}],
 
     isDuplicate: {

@@ -7,17 +7,17 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "script": "nodemon index.js"
+    "dev": "nodemon --exec 'node --env-file=.env' index.js",
+    "start": "node --env-file=.env index.js"
   },
   "dependencies": {
-    "@google/genai": "^2.6.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
+    "groq-sdk": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
     "multer": "^2.1.1",
