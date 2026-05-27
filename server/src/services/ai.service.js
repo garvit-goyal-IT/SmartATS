@@ -138,3 +138,50 @@ Return exactly this structure:
 `
     return await askGroq(prompt)
 }
+
+export const generateInterviewQuestions = async (job, candidate) => {
+  const prompt = `
+You are an expert technical interviewer. Generate interview questions for this candidate.
+Return ONLY a valid JSON array. No explanation, no markdown.
+
+Job Title: ${job.title}
+Required Skills: ${job.requirements.join(", ")}
+Candidate Skills: ${candidate.skills.join(", ")}
+Candidate Experience: ${candidate.totalExperience} years
+Missing Skills: ${candidate.missingSkills?.join(", ") || "none"}
+
+Generate 10 questions — mix of technical, behavioral, and situational.
+Return exactly this structure:
+[
+{
+  "question": "question text here",
+  "type": "technical",
+  "difficulty": "medium",
+  "purpose": "why you are asking this"
+}
+]
+Types: technical, behavioral, situational
+Difficulty: easy, medium, hard
+`
+  return await askGroq(prompt)
+}
+
+export const generateJobDescription = async (jobTitle, department) => {
+  const prompt = `
+You are an expert HR professional. Generate a complete job posting.
+Return ONLY a valid JSON object. No explanation, no markdown.
+
+Job Title: ${jobTitle}
+Department: ${department}
+
+Return exactly this structure:
+{
+"description": "full job description paragraph",
+"requirements": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+"niceToHave": ["skill1", "skill2", "skill3"],
+"responsibilities": ["responsibility1", "responsibility2", "responsibility3"],
+"experienceRequired": 3
+}
+`
+  return await askGroq(prompt)
+}

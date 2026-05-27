@@ -4,7 +4,8 @@ import {
     createApplication,
     getApplicationsByJob,
     updateApplicationStatus,
-    getShortlistSuggestions
+    getShortlistSuggestions,
+    generateQuestions
 } from "../controllers/application.controller.js"
 
 const router = express.Router()
@@ -13,5 +14,6 @@ router.post("/",                         protect, authorizeRole("admin","recruit
 router.get("/job/:jobId",                protect, getApplicationsByJob)
 router.patch("/:applicationId/status",   protect, authorizeRole("admin","recruiter"), updateApplicationStatus)
 router.get("/job/:jobId/shortlist",      protect, getShortlistSuggestions)
+router.get("/:applicationId/questions", protect,  generateQuestions)
 
 export default router

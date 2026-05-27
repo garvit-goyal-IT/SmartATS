@@ -153,3 +153,17 @@ export const toggleJobStatus= async(req,res)=>{
         return res.status(500).json({message: "Internal server error"})
     }
 }
+
+export const generateDescription = async (req, res) => {
+    try {
+        const { title, department } = req.body
+        if(!title) return res.status(400).json({ message: "Title is required" })
+
+        const { generateJobDescription } = await import("../services/ai.service.js")
+        const result = await generateJobDescription(title, department || "General")
+
+        return res.status(200).json({ success: true, result })
+    } catch(error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message })
+    }
+}

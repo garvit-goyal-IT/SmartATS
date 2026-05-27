@@ -4,17 +4,17 @@ import { useAuth } from "../../context/AuthContext"
 import toast from "react-hot-toast"
 
 const navItems = [
-    { path: "/",            label: "Dashboard",   icon: "📊" },
-    { path: "/jobs",        label: "Jobs",         icon: "💼" },
-    { path: "/candidates",  label: "Candidates",   icon: "👥" },
-    { path: "/pipeline",    label: "Pipeline",     icon: "🔄" },
-    { path: "/interviews",  label: "Interviews",   icon: "📅" },
+    { path: "/", label: "Dashboard", icon: "📊" },
+    { path: "/jobs", label: "Jobs", icon: "💼" },
+    { path: "/candidates", label: "Candidates", icon: "👥" },
+    { path: "/pipeline", label: "Pipeline", icon: "🔄" },
+    { path: "/interviews", label: "Interviews", icon: "📅" },
 ]
 
 const Layout = () => {
     const [collapsed, setCollapsed] = useState(false)
-    const { user, logout }          = useAuth()
-    const navigate                  = useNavigate()
+    const { user, logout } = useAuth()
+    const navigate = useNavigate()
 
     const handleLogout = async () => {
         await logout()
@@ -133,6 +133,23 @@ const Layout = () => {
                             </div>
                         </div>
                     )}
+                    {/* Premium upgrade banner */}
+                    {!collapsed && (
+                        <div style={{
+                            margin: "0 12px 12px",
+                            padding: "16px",
+                            background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                            borderRadius: "12px",
+                            cursor: "pointer"
+                        }} onClick={() => navigate("/premium")}>
+                            <div style={{ color: "white", fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>
+                                ⚡ Upgrade to Premium
+                            </div>
+                            <div style={{ color: "rgba(255,255,255,0.85)", fontSize: "11px" }}>
+                                AI question generator, bulk upload & more
+                            </div>
+                        </div>
+                    )}
                     <button
                         onClick={handleLogout}
                         style={{
@@ -182,6 +199,17 @@ const Layout = () => {
                         Smart ATS Hiring Suite
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{
+                            margin: "0 5px 5px",
+                            padding: "10px",
+                            background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                            borderRadius: "20px",
+                            cursor: "pointer"
+                        }} onClick={() => navigate("/premium")}>
+                            <div style={{ color: "white", fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>
+                                Premium
+                            </div>
+                        </div>
                         <div style={{
                             padding: "6px 12px",
                             background: "#eef2ff",

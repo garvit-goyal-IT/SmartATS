@@ -2,6 +2,12 @@ import Application from "../models/application.model.js"
 import Candidate from "../models/candidate.model.js"
 import Job from "../models/job.model.js"
 import { scoreCandidateWithAI, getShortlistSuggestions as getAISuggestions } from "../services/ai.service.js"
+import { 
+    sendApplicationReceived, 
+    sendRecruiterNotification ,
+    sendStatusUpdate
+} from "../services/email.service.js"
+
 
 export const createApplication = async (req, res) => {
     try {
@@ -34,6 +40,22 @@ export const createApplication = async (req, res) => {
                 keywords:       candidate.keywords
             },
             status: "applied"
+        })
+
+        if(candidate.personalInfo?.email) {
+            await sendApplicationReceived({
+                candidateName:  candidate.personalInfo.name,
+                candidateEmail: candidate.personalInfo.email,
+                jobTitle:       job.title,
+                companyName:    req.user.company
+            })
+        }
+        await sendRecruiterNotification({
+            recruiterEmail: req.user.email,
+            recruiterName:  req.user.name,
+            candidateName:  candidate.personalInfo.name,
+            jobTitle:       job.title,
+            fitScore:       aiResult.fitScore
         })
 
         await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } })
@@ -88,6 +110,16 @@ export const updateApplicationStatus = async (req, res) => {
         ).populate("candidate").populate("job", "title")
 
         if(!application) return res.status(404).json({ message: "Application not found" })
+        
+        const candidate = await Candidate.findById(application.candidate)
+        if(candidate?.personalInfo?.email) {
+            await sendStatusUpdate({
+                candidateName:  candidate.personalInfo.name,
+                candidateEmail: candidate.personalInfo.email,
+                jobTitle:       application.job?.title || "Position",
+                newStatus:  status
+            })
+        }
 
         return res.status(200).json({ success: true, message: "Status updated", application })
     } catch(error) {
@@ -117,5 +149,33 @@ export const getShortlistSuggestions = async (req, res) => {
         return res.status(200).json({ success: true, suggestions })
     } catch(error) {
         return res.status(500).json({ message: "Internal server error" })
+    }
+}
+
+export const generateQuestions = async (req, res) => {
+    try {
+        const { applicationId } = req.params
+        
+        const application = await Application.findById(applicationId)
+            .populate("candidate")
+            .populate("job")
+        
+        if(!application) return res.status(404).json({ message: "Application not found" })
+
+        const candidateData = {
+            skills: Array.isArray(application.candidate.parsedData)
+                ? application.candidate.parsedData[0]?.skills || []
+                : application.candidate.parsedData?.skills || [],
+            totalExperience: Array.isArray(application.candidate.parsedData)
+                ? application.candidate.parsedData[0]?.totalExperience || 0
+                : application.candidate.parsedData?.totalExperience || 0,
+            missingSkills: application.aiAnalysis?.missingSkills || []
+        }
+
+        const questions = await generateInterviewQuestions(application.job, candidateData)
+
+        return res.status(200).json({ success: true, questions })
+    } catch(error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message })
     }
 }

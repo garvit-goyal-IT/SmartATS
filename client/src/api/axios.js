@@ -2,10 +2,9 @@ import axios from "axios"
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3400/api",
-    withCredentials: true  // sends cookies with every request
+    withCredentials: true  
 })
 
-// attach token to every request automatically
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken")
     if(token) {
@@ -14,7 +13,6 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// handle token expiry automatically
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
