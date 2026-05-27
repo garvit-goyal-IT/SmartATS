@@ -9,15 +9,15 @@ export const comparePassword= async(currPass, hashedPass)=>{
     return bcrypt.compare(currPass,hashedPass)
 }
 
-export const generateAccessToken= async (userId)=>{
-   return jwt.sign({_id : userId}, 
+export const generateAccessToken= async (user)=>{
+   return jwt.sign({_id : user._id, role: user.role}, 
                 process.env.ACCESS_TOKEN_SECRET_KEY, 
                 {expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m"}
             )
 }
 
-export const generateRefreshToken=async (userId)=>{
-    return jwt.sign({_id : userId}, 
+export const generateRefreshToken=async (user)=>{
+    return jwt.sign({_id : user._id, role: user.role}, 
                  process.env.REFRESH_TOKEN_SECRET_KEY, 
                  {expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d"}
              )

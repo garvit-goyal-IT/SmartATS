@@ -1,6 +1,7 @@
 import express from 'express'
 import { configDotenv } from 'dotenv'
 import { connectToDb } from './src/config/db.js'
+import cookieParser from 'cookie-parser'
 import cors from "cors"
 
 configDotenv()
@@ -10,6 +11,7 @@ const app= express()
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
+app.use(cookieParser())
 
 app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
