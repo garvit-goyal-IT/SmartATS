@@ -24,6 +24,14 @@ const userSchema= new mongoose.Schema({
     company: {
         type: String,
         required: true
+    },
+    profilePicture: {
+        type: String,
+        default: ""
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

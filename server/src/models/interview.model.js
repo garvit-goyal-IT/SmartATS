@@ -22,12 +22,25 @@ const interviewSchema = new mongoose.Schema(
     },
     mode: { 
         type: String,
-        enum: ["online", "offline"], 
-        default: "online"
+        enum: ["video", "phone", "onSite"], 
+        default: "video"
     },
     meetingLink: { 
         type: String, 
         default: "" 
+    },
+    status: {
+        type: String,
+        enum: ["scheduled", "completed", "cancelled", "rescheduled"],
+        default: "scheduled"
+    },
+    duration: {
+        type: Number,   
+        default: 60
+    },
+    notes: {
+        type: String,
+        default: ""
     },
     feedback: { 
         type: String,

@@ -10,26 +10,51 @@ const jobSchema = new mongoose.Schema(
         type: String, 
         required: true
     },
+
     requirements: [{ type: String }],
 
-    skillsRequired: [{ type: String }],
+    department: {
+        type: String
+    },
 
     location: { 
         type: String
     },
+
+    niceToHave: [{type : String}],
+
+    experienceRequired: {
+        type: Number,
+        default: 0
+    },
     jobType: { 
         type: String, 
-        enum: ["full-time", "internship", "part-time"]
+        enum: ["full-time", "internship", "part-time","contract"]
     },
-    salary: { type: String },
+
+    salary: {
+        min:      { type: Number, default: 0 },
+        max:      { type: Number, default: 0 },
+        currency: { type: String, default: "INR" }
+    },
+
+    applicantCount: { 
+        type: Number, 
+        default: 0
+    },
+
+    deadline:{ 
+        type: Date,
+        required: true
+    },
     status: {
          type: String, 
-         enum: ["open", "closed"], 
+         enum: ["open", "closed","on_hold"], 
          default: "open"
      },
     postedBy: { 
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true
     },
   },
