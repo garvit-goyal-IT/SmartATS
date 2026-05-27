@@ -28,7 +28,11 @@ export const register = async (req, res) => {
 
     setRefreshCookie(res,refreshToken)
 
-    return res.status(201).json({success: true, message: "user registered successfully", user , accessToken})
+    const userResponse = user.toObject()
+    delete userResponse.password
+    delete userResponse.refreshToken
+
+    return res.status(201).json({success: true, message: "user registered successfully", userResponse , accessToken})
 }
 
 export const login = async (req, res) => {  
@@ -50,7 +54,6 @@ export const login = async (req, res) => {
         return res.status(400).json({message:"Invalid credentials"});
     }
 
-    user.password=undefined
 
     const accessToken= await generateAccessToken(user)
     const refreshToken= await generateRefreshToken(user)
@@ -61,8 +64,11 @@ export const login = async (req, res) => {
     await user.save()
 
     setRefreshCookie(res,refreshToken)
+    const userResponse = user.toObject()
+    delete userResponse.password
+    delete userResponse.refreshToken
 
-    return res.status(200).json({success: true, message: "user logged in successfully", user , accessToken})
+    return res.status(200).json({success: true, message: "user logged in successfully", userResponse , accessToken})
 
 }
 

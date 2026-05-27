@@ -24,7 +24,7 @@ export const generateRefreshToken=async (user)=>{
  }
 
  export const verifyAccessToken = (token)=> jwt.verify(token,process.env.ACCESS_TOKEN_SECRET_KEY)
- export const verifyRefreshoken = (token)=> jwt.verify(token,process.env.REFRESH_TOKEN_SECRET_KEY)
+ export const verifyRefreshToken = (token)=> jwt.verify(token,process.env.REFRESH_TOKEN_SECRET_KEY)
 
  export const hashToken= async (token)=>{
     if(!token) throw new Error("token is missing")
