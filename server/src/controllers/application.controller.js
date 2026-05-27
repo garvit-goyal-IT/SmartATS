@@ -13,11 +13,10 @@ export const createApplication = async (req, res) => {
         const job = await Job.findById(jobId)
         if(!job) return res.status(404).json({ message: "Job not found" })
 
-        // check duplicate application
         const existing = await Application.findOne({ candidate: candidateId, job: jobId })
         if(existing) return res.status(400).json({ message: "Candidate already applied to this job" })
 
-        // AI scoring
+
         const data = Array.isArray(candidate.parsedData) ? candidate.parsedData[0] : candidate.parsedData;
         const aiResult = await scoreCandidateWithAI(data, job)
 
@@ -37,7 +36,6 @@ export const createApplication = async (req, res) => {
             status: "applied"
         })
 
-        // increment applicant count on job
         await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } })
 
         return res.status(201).json({

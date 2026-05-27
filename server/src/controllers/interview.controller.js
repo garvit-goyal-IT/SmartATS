@@ -18,7 +18,6 @@ export const scheduleInterview = async (req, res) => {
             duration
         })
 
-        // update application status
         await Application.findByIdAndUpdate(applicationId, { 
             status: "interview_scheduled" 
         })
@@ -57,7 +56,6 @@ export const updateInterview = async (req, res) => {
 
         if(!interview) return res.status(404).json({ message: "Interview not found" })
 
-        // if interview completed update application status
         if(result === "pass") {
             await Application.findByIdAndUpdate(
                 interview.application, 
