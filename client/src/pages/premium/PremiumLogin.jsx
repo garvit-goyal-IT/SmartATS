@@ -184,23 +184,6 @@ const PremiumLogin = () => {
                         </button>
                     </form>
 
-                    {/* Demo credentials */}
-                    <div style={{
-                        padding: "16px 20px", background: "#111111",
-                        borderRadius: "12px", border: "1px solid #2a2a2a",
-                        marginBottom: "24px"
-                    }}>
-                        <p style={{ fontSize: "12px", fontWeight: "600", color: "#606060", marginBottom: "8px" }}>
-                            Demo credentials
-                        </p>
-                        <p style={{ fontSize: "13px", color: "#a0a0a0", marginBottom: "4px" }}>
-                            Email: <span style={{ fontFamily: "monospace", color: "#f59e0b" }}>admin@test.com</span>
-                        </p>
-                        <p style={{ fontSize: "13px", color: "#a0a0a0" }}>
-                            Password: <span style={{ fontFamily: "monospace", color: "#f59e0b" }}>password123</span>
-                        </p>
-                    </div>
-
                     <p style={{ textAlign: "center", fontSize: "14px", color: "#606060" }}>
                         Want the free version?{" "}
                         <Link to="/login" style={{ color: "#f59e0b", fontWeight: "700" }}>

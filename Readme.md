@@ -25,6 +25,10 @@ The platform combines resume parsing, semantic candidate evaluation, explainable
 ## Live Demo
 https://smart-ats-omega.vercel.app
 
+## Login credentials 
+email = admin2@test.com
+password= admin2
+
 ## Features
 
 ### Part 1 — Core ATS Platform
