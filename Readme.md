@@ -30,7 +30,7 @@
 The platform combines resume parsing, semantic candidate evaluation, explainable AI scoring, and recruiter-friendly workflows into a single cohesive product.
 
 ## Live Demo
-smart-ats-omega.vercel.app
+https://smart-ats-omega.vercel.app
 
 ## Features
 
