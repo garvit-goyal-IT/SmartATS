@@ -2,12 +2,6 @@
 
 > **AI-Powered Applicant Tracking System** 
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-6366f1?style=for-the-badge)](https://your-vercel-url.vercel.app)
-[![Premium Version](https://img.shields.io/badge/Premium%20Version-Visit%20App-f59e0b?style=for-the-badge)](https://your-vercel-url.vercel.app/premium)
-[![API Docs](https://img.shields.io/badge/API-Documentation-0ea5e9?style=for-the-badge)](#api-documentation)
-
----
-
 ## 📌 Table of Contents
 
 - [Overview](#overview)
@@ -19,7 +13,6 @@
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [Screenshots](#screenshots)
-
 
 ---
 
