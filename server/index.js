@@ -15,8 +15,6 @@ import candidateRoutes from './src/routes/candidate.routes.js'
 import applicationRoutes from './src/routes/application.routes.js'
 import interviewRoutes from './src/routes/interview.routes.js'
 
-
-
 const app= express()
 
 app.use(cors({
