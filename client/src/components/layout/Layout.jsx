@@ -3,12 +3,17 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import toast from "react-hot-toast"
 
+
 const navItems = [
     { path: "/", label: "Dashboard", icon: "📊" },
     { path: "/jobs", label: "Jobs", icon: "💼" },
     { path: "/candidates", label: "Candidates", icon: "👥" },
     { path: "/pipeline", label: "Pipeline", icon: "🔄" },
     { path: "/interviews", label: "Interviews", icon: "📅" },
+]
+const premiumItems = [
+    { path: "/compare", label: "Compare", icon: "⚖️" },
+    { path: "/bulk-upload", label: "Bulk Upload", icon: "📤" },
 ]
 
 const Layout = () => {
@@ -24,7 +29,6 @@ const Layout = () => {
 
     return (
         <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
-
             {/* Sidebar */}
             <div style={{
                 width: collapsed ? "72px" : "260px",
@@ -112,6 +116,47 @@ const Layout = () => {
                         </NavLink>
                     ))}
                 </nav>
+                {/* Premium nav items */}
+                {!collapsed && (
+                    <div style={{ padding: "8px 12px" }}>
+                        <div style={{ fontSize: "10px", fontWeight: "700", color: "#334155", letterSpacing: "0.1em", marginBottom: "8px", paddingLeft: "4px" }}>
+                            PREMIUM
+                        </div>
+                    </div>
+                )}
+                {premiumItems.map(item => (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        style={({ isActive }) => ({
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: collapsed ? "12px" : "12px 16px",
+                            borderRadius: "10px",
+                            textDecoration: "none",
+                            color: isActive ? "white" : "#94a3b8",
+                            background: isActive ? "#f59e0b" : "transparent",
+                            fontWeight: isActive ? "600" : "400",
+                            fontSize: "14px",
+                            transition: "all 0.15s ease",
+                            justifyContent: collapsed ? "center" : "flex-start",
+                            position: "relative"
+                        })}
+                    >
+                        <span style={{ fontSize: "18px", flexShrink: 0 }}>{item.icon}</span>
+                        {!collapsed && (
+                            <span style={{ flex: 1 }}>{item.label}</span>
+                        )}
+                        {!collapsed && (
+                            <span style={{
+                                fontSize: "9px", fontWeight: "700",
+                                background: "#f59e0b", color: "white",
+                                padding: "2px 6px", borderRadius: "6px"
+                            }}>PRO</span>
+                        )}
+                    </NavLink>
+                ))}
 
                 {/* User section */}
                 <div style={{

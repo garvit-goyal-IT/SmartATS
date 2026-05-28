@@ -12,7 +12,15 @@ import Candidates from "./pages/candidates/Candidates"
 import CandidateDetail from "./pages/candidates/CandidateDetail"
 import Pipeline from "./pages/Pipeline/Pipeline.jsx"
 import Interviews from "./pages/interviews/Interviews"
-import PremiumHome from "./pages/premium/premiumHome.jsx"
+
+import CompareCandidates from "./pages/candidates/CompareCandidates.jsx"
+
+
+// premium
+import PremiumGate from "./components/UI/PremiumGate.jsx"
+import PremiumDashboard from "./pages/premium/PremiumDashboard.jsx"
+import PremiumLanding from "./pages/premium/premiumLanding.jsx"
+import PremiumLogin from "./pages/premium/PremiumLogin.jsx"
 import ResumeAnalysis from "./pages/premium/resumeAnalysis.jsx"
 import AiMatch from "./pages/premium/AiMatch.jsx"
 
@@ -29,6 +37,12 @@ const ProtectedRoute = () => {
         </div>
     )
     return user ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
+const PremiumRoute = () => {
+    const { user, loading } = useAuth()
+    if (loading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "#606060", background: "#0a0a0a" }}>Loading...</div>
+    return user ? <Outlet /> : <Navigate to="/premium/login" replace />;
 }
 
 const App = () => {
@@ -50,12 +64,16 @@ const App = () => {
                             <Route path="pipeline" element={<Pipeline />} />
                             <Route path="interviews" element={<Interviews />} />
                         </Route>
+                        <Route path="compare" element={<CompareCandidates />} />
+                        <Route path="bulk upload" element={<PremiumGate feature="Bulk Resume Upload" />} />
                     </Route>
-                    <Route path="/premium" element={<PremiumHome />}>
-                        <Route index element={<PremiumHome />} />
+                    <Route path="/premium" element={<PremiumLanding/>}/>
+                    <Route path="/premium/login" element={<PremiumLogin />} />
+                    <Route element={<PremiumRoute />}>
+                        <Route path="/premium/dashboard" element={<PremiumDashboard />} />
+                        <Route path="/premium/resume-analysis" element={<ResumeAnalysis />} />
+                        <Route path="/premium/ai-match" element={<AiMatch />} />
                     </Route>
-                    <Route path="resumeAnalysis" element={<ResumeAnalysis />} />
-                    <Route path="aiMatch" element={<AiMatch />} />
                 </Routes>
             </BrowserRouter>
         </AuthProvider>

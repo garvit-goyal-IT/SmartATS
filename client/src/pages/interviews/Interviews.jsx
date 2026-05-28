@@ -142,7 +142,7 @@ const Interviews = () => {
                                     <option value="">Select candidate...</option>
                                     {applications.map(app => (
                                         <option key={app._id} value={app._id}>
-                                            {app.candidate?.personalInfo?.name || "Unknown"} — Score: {app.fitScore}
+                                            {app.candidate?.personalInfo?.name || "Unknown"}
                                         </option>
                                     ))}
                                 </select>

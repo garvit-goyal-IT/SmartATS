@@ -1,7 +1,7 @@
 import Application from "../models/application.model.js"
 import Candidate from "../models/candidate.model.js"
 import Job from "../models/job.model.js"
-import { scoreCandidateWithAI, getShortlistSuggestions as getAISuggestions } from "../services/ai.service.js"
+import { scoreCandidateWithAI, getShortlistSuggestions as getAISuggestions,compareCandidatesWithAI } from "../services/ai.service.js"
 import { 
     sendApplicationReceived, 
     sendRecruiterNotification ,
@@ -76,15 +76,33 @@ export const createApplication = async (req, res) => {
 export const getApplicationsByJob = async (req, res) => {
     try {
         const { jobId } = req.params
+        console.log("Fetching applications for job:", jobId)
 
         const applications = await Application.find({ job: jobId })
-            .populate("candidate")
+        console.log("Raw applications found:", applications.length)
+
+        const populated = await Application.find({ job: jobId })
+            .populate({
+                path: "candidate",
+                select: "personalInfo parsedData keywords"
+            })
             .populate("job", "title requirements")
             .sort({ fitScore: -1 })
 
-        return res.status(200).json({ success: true, count: applications.length, applications })
+        console.log("Populated successfully:", populated.length)
+
+        return res.status(200).json({ 
+            success: true, 
+            count: populated.length, 
+            applications: populated
+        })
     } catch(error) {
-        return res.status(500).json({ message: "Internal server error" })
+        console.error("getApplicationsByJob error:", error.message)
+        console.error("Full error:", error)
+        return res.status(500).json({ 
+            message: "Internal server error", 
+            error: error.message
+        })
     }
 }
 
@@ -176,6 +194,45 @@ export const generateQuestions = async (req, res) => {
 
         return res.status(200).json({ success: true, questions })
     } catch(error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message })
+    }
+}
+
+export const compareApplications = async (req, res) => {
+    try {
+        const { applicationIds, jobId } = req.body
+
+        if(!applicationIds || applicationIds.length < 2) {
+            return res.status(400).json({ message: "Select at least 2 candidates to compare" })
+        }
+
+        const applications = await Application.find({
+            _id: { $in: applicationIds }
+        }).populate("candidate").populate("job", "title requirements experienceRequired")
+
+        if(!applications.length) {
+            return res.status(404).json({ message: "Applications not found" })
+        }
+
+        const job = applications[0].job
+
+        const candidatesData = applications.map(app => {
+            const pd = Array.isArray(app.candidate.parsedData)
+                ? app.candidate.parsedData[0]
+                : app.candidate.parsedData
+            return {
+                name:            app.candidate.personalInfo?.name || "Unknown",
+                skills:          pd?.skills || [],
+                totalExperience: pd?.totalExperience || 0,
+                fitScore:        app.fitScore || 0
+            }
+        })
+
+        const comparison = await compareCandidatesWithAI(candidatesData, job)
+
+        return res.status(200).json({ success: true, comparison, applications })
+    } catch(error) {
+        console.error("Compare error:", error)
         return res.status(500).json({ message: "Internal server error", error: error.message })
     }
 }

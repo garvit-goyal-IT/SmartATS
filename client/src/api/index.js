@@ -46,3 +46,5 @@ export const aiAPI = {
     generateQuestions:   (applicationId) => api.get(`/applications/${applicationId}/questions`),
     generateJobDesc:     (data)          => api.post(`/jobs/${data.jobId}/generate-description`, data),
 }
+
+compare: (data) => api.post("/applications/compare", data)

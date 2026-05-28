@@ -185,3 +185,38 @@ Return exactly this structure:
 `
   return await askGroq(prompt)
 }
+
+export const compareCandidatesWithAI = async (candidates, job) => {
+  const prompt = `
+You are an expert technical recruiter. Compare these candidates for the job.
+Return ONLY a valid JSON object. No explanation, no markdown.
+
+Job Title: ${job.title}
+Required Skills: ${job.requirements.join(", ")}
+Experience Required: ${job.experienceRequired} years
+
+Candidates:
+${candidates.map((c, i) => `
+Candidate ${i + 1}: ${c.name}
+Skills: ${c.skills.join(", ")}
+Experience: ${c.totalExperience} years
+Fit Score: ${c.fitScore}
+`).join("\n")}
+
+Return exactly this structure:
+{
+"summary": "Overall comparison summary in 2-3 sentences",
+"recommendation": "Name of the best candidate and why",
+"candidates": [
+  {
+    "name": "candidate name",
+    "strengths": ["strength1", "strength2", "strength3"],
+    "weaknesses": ["weakness1", "weakness2"],
+    "verdict": "Strong fit / Good fit / Partial fit / Weak fit"
+  }
+],
+"winner": "name of best candidate"
+}
+`
+  return await askGroq(prompt)
+}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Upload,
   FileText,
@@ -16,29 +16,8 @@ import {
   Target,
   Cpu,
 } from "lucide-react";
-
-const sampleAnalysis = {
-  candidateName: "Aarav Sharma",
-  jobTitle: "Frontend Developer Intern",
-  matchScore: 92,
-  fitLabel: "Excellent Match",
-  experience: "1 Year",
-  education: "B.Tech CSE",
-  location: "Delhi, India",
-  extractedSkills: ["React", "JavaScript", "Tailwind", "Node.js", "HTML", "CSS"],
-  missingSkills: ["TypeScript", "Redux Toolkit"],
-  keywords: ["component-based UI", "API integration", "responsive design", "debugging", "Git"],
-  strengths: [
-    "Strong frontend project experience",
-    "Good React and JavaScript fundamentals",
-    "Relevant internship-level profile",
-  ],
-  recommendation: "Shortlist for technical interview",
-  summary:
-    "Candidate shows strong alignment with the job description. Resume highlights practical frontend projects, responsive UI work, and solid JavaScript knowledge.",
-  parsedResume:
-    "Aarav Sharma\nFrontend Developer Intern\nSkills: React, JavaScript, Tailwind, Node.js, HTML, CSS\nExperience: Built responsive UI projects and REST API integrations\nEducation: B.Tech CSE\nProjects: ATS dashboard, portfolio website, task tracker app",
-};
+import { candidatesAPI, jobsAPI } from "../../api/index";
+import toast from "react-hot-toast";
 
 const workflowSteps = [
   { icon: Upload, label: "Upload", text: "Add a resume file" },
@@ -50,15 +29,128 @@ const workflowSteps = [
 export default function ResumeAnalysis() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [analysis] = useState(sampleAnalysis);
+  const [analysis, setAnalysis] = useState(null);
+  const [candidates, setCandidates] = useState([]);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const skillList = useMemo(() => analysis.extractedSkills, [analysis]);
+  useEffect(() => {
+    fetchCandidates();
+  }, []);
+
+  const fetchCandidates = async () => {
+    try {
+      setLoading(true);
+      const res = await candidatesAPI.getAll();
+      const cands = Array.isArray(res.data) ? res.data : res.data?.candidates ?? [];
+      setCandidates(cands);
+      
+      if (cands.length > 0) {
+        selectCandidate(cands[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch candidates:", err);
+      toast.error("Failed to load candidates");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectCandidate = (candidate) => {
+    const skills = Array.isArray(candidate.parsedData?.skills) 
+      ? candidate.parsedData.skills 
+      : [];
+    const experience = candidate.parsedData?.totalExperience || 0;
+    
+    setSelectedCandidate(candidate);
+    setAnalysis({
+      candidateName: candidate.personalInfo?.name || "Unknown",
+      jobTitle: candidate.role || "Candidate",
+      matchScore: candidate.score || 0,
+      fitLabel: 
+        (candidate.score || 0) >= 85 ? "Excellent Match"
+        : (candidate.score || 0) >= 70 ? "Strong Match"
+        : (candidate.score || 0) >= 50 ? "Good Match"
+        : "Needs Review",
+      experience: `${experience} Years`,
+      education: candidate.parsedData?.education?.[0]?.degree || "Not specified",
+      location: candidate.personalInfo?.location || "Not specified",
+      extractedSkills: skills.slice(0, 6),
+      missingSkills: [],
+      keywords: candidate.keywords || [],
+      strengths: [
+        `${skills.length} relevant skills identified`,
+        `${experience}+ years of experience`,
+        "Profile reviewed by AI",
+      ],
+      recommendation: (candidate.score || 0) >= 75 ? "Shortlist for interview" : "Review candidate profile",
+      summary: candidate.aiInsight || "Candidate profile analyzed by AI system.",
+      parsedResume: candidate.resumeText || "Resume text not available",
+      aiInsight: candidate.aiInsight || "Awaiting AI analysis"
+    });
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadFile(file);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      const res = await candidatesAPI.upload(formData);
+      const newCandidate = res.data?.candidate || res.data;
+      
+      toast.success("Resume uploaded and parsed!");
+      await fetchCandidates();
+      
+      if (newCandidate) {
+        selectCandidate(newCandidate);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast.error("Failed to upload resume");
+    } finally {
+      setUploading(false);
+      setUploadFile(null);
+    }
+  };
+
+  const skillList = useMemo(() => analysis?.extractedSkills || [], [analysis]);
+
+  if (loading) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100vh", color: "#9ca3af", fontSize: 15
+      }}>
+        Loading candidates...
+      </div>
+    );
+  }
+
+  if (!analysis) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100vh", color: "#9ca3af", fontSize: 15
+      }}>
+        No candidates available
+      </div>
+    );
+  }
 
   return (
     <div className="resume-page">
       <style>{styles}</style>
 
       <div className="resume-wrapper">
+        {/* Hero */}
         <div className="hero-panel">
           <div>
             <p className="eyebrow">Premium AI Feature</p>
@@ -75,6 +167,7 @@ export default function ResumeAnalysis() {
           </div>
         </div>
 
+        {/* Stats */}
         <div className="stats-row">
           <div className="mini-stat">
             <p>Fit Score</p>
@@ -85,15 +178,16 @@ export default function ResumeAnalysis() {
             <h3>{analysis.extractedSkills.length}</h3>
           </div>
           <div className="mini-stat">
-            <p>Missing Skills</p>
-            <h3>{analysis.missingSkills.length}</h3>
+            <p>Keywords Found</p>
+            <h3>{analysis.keywords.length}</h3>
           </div>
           <div className="mini-stat">
-            <p>Recommendation</p>
-            <h3>Shortlist</h3>
+            <p>Total Candidates</p>
+            <h3>{candidates.length}</h3>
           </div>
         </div>
 
+        {/* Workflow */}
         <div className="workflow-strip">
           {workflowSteps.map((step, index) => {
             const Icon = step.icon;
@@ -112,7 +206,9 @@ export default function ResumeAnalysis() {
           })}
         </div>
 
+        {/* Upload & Score */}
         <div className="top-grid">
+          {/* Upload Card */}
           <div className="glass-card upload-card">
             <div className="card-head">
               <div className="card-icon gold">
@@ -128,10 +224,25 @@ export default function ResumeAnalysis() {
               <FileText size={34} />
               <h3>Drop resume here</h3>
               <p>AI will parse skills, experience, education, and keywords.</p>
-              <button className="primary-btn">Choose File</button>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileUpload}
+                style={{ display: "none" }}
+                id="file-input"
+                disabled={uploading}
+              />
+              <button
+                className="primary-btn"
+                onClick={() => document.getElementById("file-input").click()}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading..." : "Choose File"}
+              </button>
             </div>
           </div>
 
+          {/* Score Card */}
           <div className="glass-card score-card">
             <div className="score-top">
               <div>
@@ -154,6 +265,7 @@ export default function ResumeAnalysis() {
           </div>
         </div>
 
+        {/* Filters */}
         <div className="filter-row">
           <div className="search-box">
             <Search size={16} />
@@ -171,13 +283,14 @@ export default function ResumeAnalysis() {
               <option>Skills</option>
               <option>Keywords</option>
               <option>Summary</option>
-              <option>Missing Skills</option>
             </select>
           </div>
         </div>
 
+        {/* Main Content */}
         <div className="main-grid">
           <div className="left-column">
+            {/* Skills */}
             <Section title="Extracted Skills" icon={BadgeCheck} accent="green">
               <div className="chip-row">
                 {skillList
@@ -190,18 +303,7 @@ export default function ResumeAnalysis() {
               </div>
             </Section>
 
-            <Section title="Missing Skills" icon={XCircle} accent="red">
-              <div className="chip-row">
-                {analysis.missingSkills
-                  .filter((skill) => skill.toLowerCase().includes(search.toLowerCase()) || filter === "All" || filter === "Missing Skills")
-                  .map((skill) => (
-                    <span key={skill} className="chip danger">
-                      {skill}
-                    </span>
-                  ))}
-              </div>
-            </Section>
-
+            {/* Keywords */}
             <Section title="AI Keywords" icon={Sparkles} accent="gold">
               <div className="chip-row">
                 {analysis.keywords
@@ -214,6 +316,7 @@ export default function ResumeAnalysis() {
               </div>
             </Section>
 
+            {/* Summary */}
             <Section title="AI Summary" icon={BarChart3} accent="blue">
               <p className="text-block">{analysis.summary}</p>
               <div className="strength-list">
@@ -228,22 +331,24 @@ export default function ResumeAnalysis() {
           </div>
 
           <div className="right-column">
+            {/* Resume Preview */}
             <div className="glass-card analysis-card">
               <div className="card-head compact">
                 <div className="card-icon purple">
                   <FileText size={20} />
                 </div>
                 <div>
-                  <h2>Parsed Resume Preview</h2>
-                  <p>Readable extracted text from the uploaded document</p>
+                  <h2>Parsed Resume</h2>
+                  <p>Extracted text from the document</p>
                 </div>
               </div>
 
               <div className="resume-preview">
-                <pre>{analysis.parsedResume}</pre>
+                <pre>{analysis.parsedResume.slice(0, 800)}...</pre>
               </div>
             </div>
 
+            {/* Recommendation */}
             <div className="glass-card analysis-card recommend-card">
               <div className="card-head compact">
                 <div className="card-icon green">
@@ -251,7 +356,7 @@ export default function ResumeAnalysis() {
                 </div>
                 <div>
                   <h2>AI Recommendation</h2>
-                  <p>Explainable result based on the job description</p>
+                  <p>Explainable result based on profile</p>
                 </div>
               </div>
 
@@ -260,11 +365,9 @@ export default function ResumeAnalysis() {
                   <ShieldCheck size={18} />
                   <strong>{analysis.recommendation}</strong>
                 </div>
-                <p>
-                  Resume match is strong, with direct experience in React and JavaScript. TypeScript and Redux would improve the profile.
-                </p>
+                <p>{analysis.aiInsight}</p>
                 <button className="secondary-btn">
-                  Send to pipeline <ArrowRight size={15} />
+                  Send to Pipeline <ArrowRight size={15} />
                 </button>
               </div>
             </div>
@@ -459,8 +562,7 @@ const styles = `
     margin-bottom: 22px;
   }
 
-  .glass-card,
-  .section-card {
+  .glass-card, .section-card {
     background: rgba(255,255,255,0.035);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 28px;
@@ -468,9 +570,7 @@ const styles = `
     backdrop-filter: blur(14px);
   }
 
-  .upload-card,
-  .score-card,
-  .analysis-card {
+  .upload-card, .score-card, .analysis-card {
     padding: 22px;
   }
 
@@ -480,9 +580,7 @@ const styles = `
     align-items: flex-start;
   }
 
-  .card-head h2,
-  .section-head h3,
-  .recommendation-box strong {
+  .card-head h2, .section-head h3, .recommendation-box strong {
     margin: 0;
     color: #fff;
   }
@@ -553,8 +651,7 @@ const styles = `
     line-height: 1.7;
   }
 
-  .primary-btn,
-  .secondary-btn {
+  .primary-btn, .secondary-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -572,7 +669,6 @@ const styles = `
   .primary-btn {
     background: linear-gradient(135deg, #f5c451, #f59e0b);
     color: #111827;
-    box-shadow: 0 14px 30px rgba(245, 164, 11, 0.18);
   }
 
   .secondary-btn {
@@ -581,9 +677,13 @@ const styles = `
     border: 1px solid rgba(255,255,255,0.08);
   }
 
-  .primary-btn:hover,
-  .secondary-btn:hover {
+  .primary-btn:hover, .secondary-btn:hover {
     transform: translateY(-1px);
+  }
+
+  .primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .score-top {
@@ -670,8 +770,7 @@ const styles = `
     margin-bottom: 22px;
   }
 
-  .search-box,
-  .filter-box {
+  .search-box, .filter-box {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -687,8 +786,7 @@ const styles = `
     min-width: 260px;
   }
 
-  .search-box input,
-  .filter-box select {
+  .search-box input, .filter-box select {
     border: none;
     outline: none;
     background: transparent;
@@ -709,8 +807,7 @@ const styles = `
     align-items: start;
   }
 
-  .left-column,
-  .right-column {
+  .left-column, .right-column {
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -775,11 +872,6 @@ const styles = `
     color: #6ee7b7;
   }
 
-  .chip.danger {
-    background: rgba(244,63,94,0.14);
-    color: #fca5a5;
-  }
-
   .chip.neutral {
     background: rgba(99,102,241,0.16);
     color: #c7d2fe;
@@ -819,6 +911,7 @@ const styles = `
     background: rgba(0,0,0,0.18);
     padding: 18px;
     overflow: auto;
+    max-height: 300px;
   }
 
   .resume-preview pre {
@@ -827,7 +920,8 @@ const styles = `
     font-family: inherit;
     color: #d1d5db;
     line-height: 1.8;
-    font-size: 14px;
+    font-size: 13px;
+    word-break: break-word;
   }
 
   .recommendation-box {
@@ -861,8 +955,7 @@ const styles = `
   }
 
   @media (max-width: 1100px) {
-    .top-grid,
-    .main-grid {
+    .top-grid, .main-grid {
       grid-template-columns: 1fr;
     }
 
@@ -872,8 +965,7 @@ const styles = `
   }
 
   @media (max-width: 800px) {
-    .stats-row,
-    .score-meta {
+    .stats-row, .score-meta {
       grid-template-columns: 1fr;
     }
 

@@ -1,99 +1,115 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import api from "../api/axios";
+import { createContext, useContext, useState, useEffect } from "react"
+import { authAPI } from "../api/index"
 
-const AuthContext = createContext(null);
+const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-  
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-  
-    api
-      .get("/auth/me")
-      .then((res) => {
-        const userFromMe =
-          res.data.user || res.data.data?.user || res.data.data || null;
-  
-        setUser(userFromMe);
-      })
-      .catch((err) => {
-        console.log("ME ERROR:", err.response?.data || err.message);
-        localStorage.removeItem("accessToken");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-  
-  const login = async (email, password) => {
-    const res = await api.post("/auth/login", { email, password });
-  
-    const token = res.data.accessToken || res.data.token;
-    if (!token) {
-      throw new Error("No token returned from login");
-    }
-  
-    localStorage.setItem("accessToken", token);
-  
-    const userFromLogin =
-      res.data.user || res.data.data?.user || res.data.data || null;
-  
-    if (userFromLogin) {
-      setUser(userFromLogin);
-    } else {
-      const meRes = await api.get("/auth/me");
-      const userFromMe =
-        meRes.data.user || meRes.data.data?.user || meRes.data.data || null;
-  
-      setUser(userFromMe);
-    }
-  
-    return res.data;
-  };
+    // Check if user is logged in on mount
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const token = localStorage.getItem("accessToken")
+                if (!token) {
+                    setLoading(false)
+                    return
+                }
+                
+                // Verify token is still valid
+                const res = await authAPI.me()
+                const userData = res.data.user || res.data
+                
+                setUser({
+                    ...userData,
+                    // Check if user is premium (adjust based on your backend response)
+                    isPremium: userData.isPremium || userData.tier === "premium" || false
+                })
+            } catch (err) {
+                console.error("Auth check failed:", err)
+                localStorage.removeItem("accessToken")
+                setUser(null)
+            } finally {
+                setLoading(false)
+            }
+        }
 
-  const register = async (data) => {
-    const res = await api.post("/auth/register", data);
-  
-    const token = res.data.accessToken || res.data.token;
-    if (!token) {
-      throw new Error("No token returned from register");
+        checkAuth()
+    }, [])
+
+    const login = async (email, password, isPremium = false) => {
+        try {
+            const res = await authAPI.login({ email, password })
+            const token = res.data.token || res.data.accessToken
+            const userData = res.data.user || res.data
+            
+            localStorage.setItem("accessToken", token)
+            
+            const userWithTier = {
+                ...userData,
+                isPremium: isPremium || userData.isPremium || false
+            }
+            
+            setUser(userWithTier)
+            return userWithTier
+        } catch (err) {
+            throw err
+        }
     }
-  
-    localStorage.setItem("accessToken", token);
-  
-    const userFromRegister =
-      res.data.user || res.data.data?.user || res.data.data || null;
-  
-    if (userFromRegister) {
-      setUser(userFromRegister);
-    } else {
-      const meRes = await api.get("/auth/me");
-      const userFromMe =
-        meRes.data.user || meRes.data.data?.user || meRes.data.data || null;
-  
-      setUser(userFromMe);
+
+    const register = async (data, isPremium = false) => {
+        try {
+            const res = await authAPI.register(data)
+            const token = res.data.token || res.data.accessToken
+            const userData = res.data.user || res.data
+            
+            localStorage.setItem("accessToken", token)
+            
+            const userWithTier = {
+                ...userData,
+                isPremium: isPremium || userData.isPremium || false
+            }
+            
+            setUser(userWithTier)
+            return userWithTier
+        } catch (err) {
+            throw err
+        }
     }
-  
-    return res.data;
-  };
 
-  const logout = async () => {
-    await api.post("/auth/logout");
-    localStorage.removeItem("accessToken");
-    setUser(null);
-  };
+    const logout = () => {
+        localStorage.removeItem("accessToken")
+        setUser(null)
+    }
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+    const upgradeToPremium = () => {
+        if (user) {
+            setUser({ ...user, isPremium: true })
+        }
+    }
 
-export const useAuth = () => useContext(AuthContext);
+    const value = {
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        upgradeToPremium,
+        isPremium: user?.isPremium || false
+    }
+
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    )
+}
+
+export const useAuth = () => {
+    const context = useContext(AuthContext)
+    if (!context) {
+        throw new Error("useAuth must be used within AuthProvider")
+    }
+    return context
+}

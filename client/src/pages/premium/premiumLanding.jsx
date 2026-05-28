@@ -55,7 +55,7 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function PremiumHome() {
+export default function PremiumLanding() {
   const navigate = useNavigate();
   const heroRef = useRef(null);
   const [scrollY, setScrollY] = useState(0);
@@ -99,8 +99,8 @@ export default function PremiumHome() {
             ))}
           </div>
           <div style={styles.navCta}>
-            <button onClick={() => navigate("/login")} style={styles.btnOutline}>Sign In</button>
-            <button onClick={() => navigate("/register")} style={styles.btnGold}>Start Hiring Today →</button>
+            <button onClick={() => navigate("/")} style={styles.btnOutline}>BASIC</button>
+            <button onClick={() => navigate("/premium/login")} style={styles.btnGold}>Start Hiring Today →</button>
           </div>
         </div>
       </nav>
@@ -126,12 +126,9 @@ export default function PremiumHome() {
           and explainable AI that helps you find the best talent faster — every time.
         </p>
         <div style={styles.heroBtns}>
-          <button onClick={() => navigate("/register")} style={styles.btnHero}>
+          <button onClick={() => navigate("/premium/login")} style={styles.btnHero}>
             Start Hiring Today
             <span style={{ marginLeft: 8 }}>→</span>
-          </button>
-          <button onClick={() => navigate("/login")} style={styles.btnHeroOutline}>
-            View Live Demo
           </button>
         </div>
 
@@ -240,7 +237,7 @@ export default function PremiumHome() {
               No Auto Match Candidate<br/>
               Standard support <br/>
                </p>
-            <button onClick={() => navigate("/register")} style={{ ...styles.btnHeroOutline, marginTop: 40 }}>
+            <button onClick={() => navigate("/")} style={{ ...styles.btnHeroOutline, marginTop: 40 }}>
               Get Started for Free
             </button>
             <h1 style={{...styles.featureTitle, fontSize: 40, marginTop: 40}}>Free </h1>
@@ -254,7 +251,7 @@ export default function PremiumHome() {
               No Auto Match Candidate<br/>
               Standard Support<br/>
               </p>
-            <button onClick={() => navigate("/register")} style={{ ...styles.btnHero, marginTop: 40 }}>
+            <button onClick={() => navigate("/premium/login")} style={{ ...styles.btnHero, marginTop: 40 }}>
               Upgrade to Pro
             </button>
             <h1 style={{...styles.featureTitle, fontSize: 40, marginTop: 40}}>Rs 799 </h1>
@@ -269,8 +266,8 @@ export default function PremiumHome() {
               Priority support <br/>
               24/7 Avaialble <br/>
               </p>
-            <button onClick={() => navigate("/register")} style={{ ...styles.btnHero, marginTop: 40 }}>
-              Upgrade to Pro
+            <button onClick={() => navigate("/premium/login")} style={{ ...styles.btnHero, marginTop: 40 }}>
+              Upgrade to Ultra
             </button>
             <h1 style={{...styles.featureTitle, fontSize: 40, marginTop:40}}>Rs 1299 </h1>
             <h1 style={{...styles.featureTitle, fontSize: 20, marginTop: 5}}>Per Month </h1>
@@ -289,8 +286,8 @@ export default function PremiumHome() {
           <br />
           <strong style={{ color: "#F5C842" }}>Limited Early Access Available</strong> — set up your account in minutes.
         </p>
-        <button onClick={() => navigate("/register")} style={styles.btnHero}>
-          Start Hiring Today →
+        <button onClick={() => navigate(`#pricing`)} style={styles.btnHero}>
+        Upgrade
         </button>
       </section>
 

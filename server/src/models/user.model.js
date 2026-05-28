@@ -37,6 +37,19 @@ const userSchema= new mongoose.Schema({
         type: String,
         default: "",
         select: false
+    },
+    isPremium: {
+        type: Boolean,
+        default: false
+    },
+    tier: {
+        type: String,
+        enum: ["basic", "premium"],
+        default: "basic"
+    },
+    premiumSince: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
