@@ -60,6 +60,42 @@ const Candidates = () => {
             setUploading(false)
         }
     }
+    const FitScoreBadge = ({ candidateId }) => {
+        const [score, setScore] = useState(null)
+    
+        useEffect(() => {
+            applicationsAPI.getByCandidate 
+                ? applicationsAPI.getByCandidate(candidateId)
+                    .then(res => {
+                        const apps = res.data.applications || []
+                        if(apps.length > 0) setScore(apps[0].fitScore)
+                    })
+                    .catch(() => {})
+                : null
+        }, [candidateId])
+    
+        if(score === null) return null
+    
+        return (
+            <div style={{
+                display: "flex", alignItems: "center",
+                justifyContent: "space-between", marginBottom: "12px",
+                padding: "10px 14px", borderRadius: "10px",
+                background: score >= 80 ? "#dcfce7" : score >= 60 ? "#fef3c7" : "#fee2e2"
+            }}>
+                <span style={{ fontSize: "13px", fontWeight: "600",
+                    color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626"
+                }}>
+                    AI Fit Score
+                </span>
+                <span style={{ fontSize: "20px", fontWeight: "800",
+                    color: score >= 80 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626"
+                }}>
+                    {score}/100
+                </span>
+            </div>
+        )
+    }
 
     return (
         <div>
@@ -239,7 +275,7 @@ const Candidates = () => {
                                     }}>{skill}</span>
                                 ))}
                             </div>
-
+                            <FitScoreBadge candidateId={c._id} />
                             <button
                                 onClick={() => navigate(`/candidates/${c._id}`)}
                                 style={{

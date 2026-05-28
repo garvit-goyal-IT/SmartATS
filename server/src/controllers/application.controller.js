@@ -72,6 +72,18 @@ export const createApplication = async (req, res) => {
         return res.status(500).json({ message: "Internal server error", error: error.message })
     }
 }
+export const getApplicationsByCandidate = async (req, res) => {
+    try {
+        const { candidateId } = req.params
+        const applications = await Application.find({ candidate: candidateId })
+            .populate("job", "title")
+            .sort({ fitScore: -1 })
+
+        return res.status(200).json({ success: true, applications })
+    } catch(error) {
+        return res.status(500).json({ message: "Internal server error" })
+    }
+}
 
 export const getApplicationsByJob = async (req, res) => {
     try {

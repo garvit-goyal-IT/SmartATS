@@ -48,3 +48,9 @@ export const aiAPI = {
 }
 
 compare: (data) => api.post("/applications/compare", data)
+
+upload: (formData, jobId) => api.post(`/candidates/upload?jobId=${jobId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+})
+
+getApplications: (candidateId) => api.get(`/applications/candidate/${candidateId}`)

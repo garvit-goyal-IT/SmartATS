@@ -1,656 +1,658 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import { jobsAPI } from "../../api/index.js"
+
 import {
-    ArrowLeft,
-    Briefcase,
-    MapPin,
-    BadgeIndianRupee,
-    CalendarDays,
-    Users,
-    ShieldCheck,
-    Sparkles,
-    Search,
-    Filter,
-    CheckCircle2,
-    XCircle,
-    Send,
-    Eye,
-    Pencil,
-    CircleDot,
-    ClipboardList,
+  ArrowLeft,
+  Briefcase,
+  MapPin,
+  BadgeIndianRupee,
+  CalendarDays,
+  Users,
+  ShieldCheck,
+  Sparkles,
+  Search,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  Send,
+  Eye,
+  Pencil,
+  CircleDot,
+  ClipboardList,
 } from "lucide-react";
 
-const DEMO_JOB = {
-    id: 1,
-    title: "Senior Frontend Engineer",
-    department: "Engineering",
-    type: "Full-time",
-    location: "Bangalore, India",
-    status: "Active",
-    salary: "₹18L - ₹28L / year",
-    deadline: "2025-07-15",
-    applicants: 47,
-    description:
-        "Build world-class interfaces for our ATS platform used by 500+ companies. Work with product, design, and backend teams to deliver polished, scalable experiences.",
-    requirements:
-        "5+ years experience, strong React, TypeScript, CSS architecture, component design systems, and product mindset.",
-    skills: ["React", "TypeScript", "GraphQL", "Design Systems", "Performance"],
-};
-
-const DEMO_APPLICANTS = [
-    {
-        id: 1,
-        name: "Aarav Sharma",
-        role: "Frontend Developer Intern",
-        score: 92,
-        stage: "Applied",
-        email: "aarav@gmail.com",
-        location: "Delhi",
-        summary: "Strong React and JavaScript fundamentals with good UI project experience.",
-    },
-    {
-        id: 2,
-        name: "Neha Verma",
-        role: "Full Stack Developer",
-        score: 86,
-        stage: "Shortlisted",
-        email: "neha@gmail.com",
-        location: "Mumbai",
-        summary: "Solid MERN profile and good project ownership.",
-    },
-    {
-        id: 3,
-        name: "Kabir Malhotra",
-        role: "Backend Developer",
-        score: 79,
-        stage: "Interview",
-        email: "kabir@gmail.com",
-        location: "Bangalore",
-        summary: "Good Node.js and API design knowledge.",
-    },
-    {
-        id: 4,
-        name: "Simran Kaur",
-        role: "UI Engineer",
-        score: 88,
-        stage: "Screening",
-        email: "simran@gmail.com",
-        location: "Pune",
-        summary: "Strong portfolio and responsive UI work.",
-    },
-];
-
 const stageMeta = {
-    Applied: { bg: "#EFF6FF", color: "#1D4ED8", icon: CircleDot },
-    Screening: { bg: "#FFFBEB", color: "#B45309", icon: ClipboardList },
-    Shortlisted: { bg: "#F3E8FF", color: "#7C3AED", icon: Sparkles },
-    Interview: { bg: "#ECFDF5", color: "#047857", icon: CalendarDays },
-    Offer: { bg: "#FFF7ED", color: "#C2410C", icon: ShieldCheck },
-    Hired: { bg: "#DCFCE7", color: "#166534", icon: CheckCircle2 },
-    Rejected: { bg: "#FEF2F2", color: "#B91C1C", icon: XCircle },
+  Applied: { bg: "#EFF6FF", color: "#1D4ED8", icon: CircleDot },
+  Screening: { bg: "#FFFBEB", color: "#B45309", icon: ClipboardList },
+  Shortlisted: { bg: "#F3E8FF", color: "#7C3AED", icon: Sparkles },
+  Interview: { bg: "#ECFDF5", color: "#047857", icon: CalendarDays },
+  Offer: { bg: "#FFF7ED", color: "#C2410C", icon: ShieldCheck },
+  Hired: { bg: "#DCFCE7", color: "#166534", icon: CheckCircle2 },
+  Rejected: { bg: "#FEF2F2", color: "#B91C1C", icon: XCircle },
 };
 
 export default function JobDetail() {
-    const navigate = useNavigate();
-    const { jobId } = useParams();
+  const navigate = useNavigate();
+  const { jobId } = useParams();
 
-    const job = DEMO_JOB;
-    const [tab, setTab] = useState("overview");
-    const [search, setSearch] = useState("");
-    const [stageFilter, setStageFilter] = useState("All");
-    const [showEdit, setShowEdit] = useState(false);
-    const [jobData, setJobData] = useState(job);
-    const [editForm, setEditForm] = useState({
-        title: job.title || "",
-        department: job.department || "",
-        type: job.type || "",
-        location: job.location || "",
-        description: job.description || "",
-        requirements: job.requirements || "",
-        skills: Array.isArray(job.skills) ? job.skills.join(", ") : (job.skills || ""),
-        minSalary: job.minSalary || "",
-        maxSalary: job.maxSalary || "",
-        deadline: job.deadline || "",
-        status: job.status || "Active",
-    });
+  const [jobData, setJobData] = useState(null);
+  const [applicants, setApplicants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("overview");
+  const [search, setSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState("All");
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    department: "",
+    type: "",
+    location: "",
+    description: "",
+    requirements: "",
+    skills: "",
+    minSalary: "",
+    maxSalary: "",
+    deadline: "",
+    status: "Active",
+  });
 
-    const filteredApplicants = useMemo(() => {
-        return DEMO_APPLICANTS.filter((app) => {
-            const matchesSearch =
-                app.name.toLowerCase().includes(search.toLowerCase()) ||
-                app.role.toLowerCase().includes(search.toLowerCase()) ||
-                app.email.toLowerCase().includes(search.toLowerCase());
-            const matchesStage = stageFilter === "All" || app.stage === stageFilter;
-            return matchesSearch && matchesStage;
+  useEffect(() => {
+    const fetchJobDetails = async () => {
+      try {
+        setLoading(true);
+  
+        const res = await jobsAPI.getById(jobId);
+        const job = res.data?.job || res.data;
+  
+        setJobData(job);
+  
+        setEditForm({
+          title: job.title || "",
+          department: job.department || "",
+          type: job.type || "",
+          location: job.location || "",
+          description: job.description || "",
+          requirements: job.requirements || "",
+          skills: Array.isArray(job.skills) ? job.skills.join(", ") : "",
+          minSalary: job.minSalary || "",
+          maxSalary: job.maxSalary || "",
+          deadline: job.deadline || "",
+          status: job.status || "Active",
         });
-    }, [search, stageFilter]);
-
-    const tabs = [
-        { id: "overview", label: "Overview", icon: Briefcase },
-        { id: "applicants", label: "Applicants", icon: Users },
-        { id: "ai", label: "AI Insights", icon: Sparkles },
-    ];
-
-    const handleEditChange = (e) => {
-        setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  
+        // use this only if your backend sends applicants inside job
+        setApplicants(job.applicants || job.applications || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load job details");
+      } finally {
+        setLoading(false);
+      }
     };
+  
+    if (jobId) fetchJobDetails();
+  }, [jobId]);
 
-    const handleUpdateJob = async () => {
-        try {
-            const payload = {
-                ...editForm,
-                skills: editForm.skills
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-            };
+  const filteredApplicants = useMemo(() => {
+    return applicants.filter((app) => {
+      const matchesSearch =
+        app.name.toLowerCase().includes(search.toLowerCase()) ||
+        app.role.toLowerCase().includes(search.toLowerCase()) ||
+        app.email.toLowerCase().includes(search.toLowerCase());
+      const matchesStage = stageFilter === "All" || app.stage === stageFilter;
+      return matchesSearch && matchesStage;
+    });
+  }, [search, stageFilter]);
 
-            setJobData((prev) => ({
-                ...prev,
-                ...payload,
-                skills: payload.skills,
-            }));
+  const tabs = [
+    { id: "overview", label: "Overview", icon: Briefcase },
+    { id: "applicants", label: "Applicants", icon: Users },
+    { id: "ai", label: "AI Insights", icon: Sparkles },
+  ];
 
-            setShowEdit(false);
-        } catch (err) {
-            console.log(err);
-            alert("Failed to update job");
-        }
-    };
-
-    return (
-        <div className="job-details-page">
-            <style>{styles}</style>
-
-            <div className="job-details-wrapper">
-                <button className="back-btn" onClick={() => navigate(-1)}>
-                    <ArrowLeft size={16} /> Back to jobs
-                </button>
-
-                <div className="hero-card">
-                    <div className="hero-left">
-                        <div className="title-row">
-                            <div>
-                                <p className="eyebrow">Job Details</p>
-                                <h1>{jobData.title}</h1>
-                                <p className="subtext">{jobData.department} · {jobData.type} · {jobData.location}</p>
-                            </div>
-                            <StatusBadge status={jobData.status} />
-                        </div>
-
-                        <div className="quick-facts">
-                            <Fact icon={Users} label="Applicants" value={jobData.applicants} />
-                            <Fact icon={BadgeIndianRupee} label="Salary" value={jobData.salary} />
-                            <Fact icon={CalendarDays} label="Deadline" value={jobData.deadline} />
-                            <Fact icon={MapPin} label="Location" value={jobData.location} />
-                        </div>
-                    </div>
-
-                    <div className="hero-actions">
-                        <button className="secondary-btn" onClick={() => setShowEdit(true)}>
-                            <Pencil size={15} /> Edit Job
-                        </button>
-                        <button className="primary-btn" onClick={() => setTab("applicants")}>
-                            <Eye size={15} /> View Applicants
-                        </button>
-                    </div>
-                </div>
-
-                <div className="tabs-row">
-                    {tabs.map((t) => {
-                        const Icon = t.icon;
-                        return (
-                            <button
-                                key={t.id}
-                                className={`tab-btn ${tab === t.id ? "active" : ""}`}
-                                onClick={() => setTab(t.id)}
-                            >
-                                <Icon size={16} /> {t.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <div className="content-grid">
-                    <div className="main-column">
-                        {tab === "overview" && (
-                            <>
-                                <Panel title="Job Description">
-                                    <p className="panel-text">{jobData.description}</p>
-                                </Panel>
-
-                                <Panel title="Requirements">
-                                    <p className="panel-text">{jobData.requirements}</p>
-                                </Panel>
-
-                                <Panel title="Required Skills">
-                                    <div className="chip-row">
-                                        {jobData.skills.map((skill) => (
-                                            <span key={skill} className="chip">
-                                                {skill}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </Panel>
-                            </>
-                        )}
-
-                        {tab === "applicants" && (
-                            <Panel
-                                title="Applicants"
-                                right={
-                                    <div className="filters-inline">
-                                        <div className="search-box">
-                                            <Search size={16} />
-                                            <input
-                                                value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
-                                                placeholder="Search applicant..."
-                                            />
-                                        </div>
-                                        <div className="filter-box">
-                                            <Filter size={16} />
-                                            <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-                                                <option>All</option>
-                                                <option>Applied</option>
-                                                <option>Screening</option>
-                                                <option>Shortlisted</option>
-                                                <option>Interview</option>
-                                                <option>Offer</option>
-                                                <option>Hired</option>
-                                                <option>Rejected</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                }
-                            >
-                                <div className="applicant-list">
-                                    {filteredApplicants.map((applicant) => (
-                                        <ApplicantCard key={applicant.id} applicant={applicant} />
-                                    ))}
-                                </div>
-                            </Panel>
-                        )}
-
-                        {tab === "ai" && (
-                            <Panel title="AI Hiring Insights">
-                                <div className="ai-grid">
-                                    <InsightCard label="Top Match" value="Aarav Sharma" desc="92% fit score based on React, JS, and UI projects." />
-                                    <InsightCard label="Missing Skill Trend" value="TypeScript" desc="Most applicants miss advanced typing and state management." />
-                                    <InsightCard label="Recommendation" value="Shortlist 5" desc="These candidates are highly aligned with the job description." />
-                                </div>
-                            </Panel>
-                        )}
-                    </div>
-
-                    <div className="side-column">
-                        <Panel title="Job Summary">
-                            <div className="summary-list">
-                                <SummaryItem label="Department" value={jobData.department} />
-                                <SummaryItem label="Type" value={jobData.type} />
-                                <SummaryItem label="Location" value={jobData.location} />
-                                <SummaryItem label="Applicants" value={jobData.applicants} />
-                                <SummaryItem label="Status" value={jobData.status} />
-                            </div>
-                        </Panel>
-
-                        <Panel title="AI Matching Snapshot">
-                            <div className="snapshot">
-                                <div className="snapshot-ring">
-                                    <span>{Math.round(filteredApplicants.reduce((a, c) => a + c.score, 0) / filteredApplicants.length || 0)}%</span>
-                                </div>
-                                <p className="snapshot-text">Average match score among current applicants.</p>
-                            </div>
-                        </Panel>
-                    </div>
-                </div>
-            </div>
-            {showEdit && (
-                <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && setShowEdit(false)}>
-                    <div style={s.modal}>
-                        <div style={s.modalHeader}>
-                            <h2 style={s.modalTitle}>Edit Job</h2>
-                            <button style={s.closeBtn} onClick={() => setShowEdit(false)}>✕</button>
-                        </div>
-
-                        <div style={s.modalBody}>
-                            <div style={s.formGrid}>
-                                <FormField label="Job Title *" span={2}>
-                                    <input
-                                        style={s.input}
-                                        name="title"
-                                        value={editForm.title}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Department *">
-                                    <input
-                                        style={s.input}
-                                        name="department"
-                                        value={editForm.department}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Job Type">
-                                    <input
-                                        style={s.input}
-                                        name="type"
-                                        value={editForm.type}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Location" span={2}>
-                                    <input
-                                        style={s.input}
-                                        name="location"
-                                        value={editForm.location}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Job Description *" span={2}>
-                                    <textarea
-                                        style={{ ...s.input, minHeight: 100, resize: "vertical",lineHeight: 1.7 }}
-                                        name="description"
-                                        value={editForm.description}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Requirements" span={2}>
-                                    <textarea
-                                        style={{ ...s.input, minHeight: 80, resize: "vertical" }}
-                                        name="requirements"
-                                        value={editForm.requirements}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Skills (comma-separated)" span={2}>
-                                    <input
-                                        style={s.input}
-                                        name="skills"
-                                        value={editForm.skills}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Min Salary (₹/yr)">
-                                    <input
-                                        style={s.input}
-                                        type="number"
-                                        name="minSalary"
-                                        value={editForm.minSalary}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Max Salary (₹/yr)">
-                                    <input
-                                        style={s.input}
-                                        type="number"
-                                        name="maxSalary"
-                                        value={editForm.maxSalary}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Application Deadline">
-                                    <input
-                                        style={s.input}
-                                        type="date"
-                                        name="deadline"
-                                        value={editForm.deadline}
-                                        onChange={handleEditChange}
-                                    />
-                                </FormField>
-
-                                <FormField label="Status">
-                                    <select
-                                        style={s.input}
-                                        name="status"
-                                        value={editForm.status}
-                                        onChange={handleEditChange}
-                                    >
-                                        {["Active", "Draft", "Paused", "Closed"].map((st) => (
-                                            <option key={st}>{st}</option>
-                                        ))}
-                                    </select>
-                                </FormField>
-                            </div>
-                        </div>
-
-                        <div style={s.modalFooter}>
-                            <button style={s.btnSecondary} onClick={() => setShowEdit(false)}>
-                                Cancel
-                            </button>
-                            <button style={s.btnPrimary} onClick={handleUpdateJob}>
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-function ApplicantCard({ applicant }) {
-    const meta = stageMeta[applicant.stage] || stageMeta.Applied;
-    const Icon = meta.icon;
-
-    return (
-        <div className="applicant-card">
-            <div className="applicant-top">
-                <div>
-                    <div className="applicant-name-row">
-                        <h4>{applicant.name}</h4>
-                        <span className="score-pill">{applicant.score}%</span>
-                    </div>
-                    <p className="applicant-role">{applicant.role}</p>
-                </div>
-                <span className="stage-pill" style={{ background: meta.bg, color: meta.color }}>
-                    <Icon size={14} /> {applicant.stage}
-                </span>
-            </div>
-
-            <p className="applicant-summary">{applicant.summary}</p>
-
-            <div className="applicant-meta">
-                <span>📧 {applicant.email}</span>
-                <span>📍 {applicant.location}</span>
-            </div>
-
-            <div className="applicant-actions">
-                <button className="ghost-btn">View</button>
-                <button className="ghost-btn green">Shortlist</button>
-                <button className="ghost-btn red">Reject</button>
-                <button className="primary-mini-btn">Interview</button>
-            </div>
-        </div>
-    );
-}
-
-function InsightCard({ label, value, desc }) {
-    return (
-        <div className="insight-card">
-            <p>{label}</p>
-            <h4>{value}</h4>
-            <span>{desc}</span>
-        </div>
-    );
-}
-
-function SummaryItem({ label, value }) {
-    return (
-        <div className="summary-item">
-            <span>{label}</span>
-            <strong>{value}</strong>
-        </div>
-    );
-}
-
-function Panel({ title, right, children }) {
-    return (
-        <section className="panel-card">
-            <div className="panel-head">
-                <h3>{title}</h3>
-                {right}
-            </div>
-            {children}
-        </section>
-    );
-}
-
-function Fact({ icon: Icon, label, value }) {
-    return (
-        <div className="fact-card">
-            <Icon size={16} />
-            <div>
-                <span>{label}</span>
-                <strong>{value}</strong>
-            </div>
-        </div>
-    );
-}
-
-function StatusBadge({ status }) {
-    const colors = {
-        Active: { bg: "#DCFCE7", color: "#166534" },
-        Paused: { bg: "#FEF3C7", color: "#92400E" },
-        Closed: { bg: "#FEE2E2", color: "#991B1B" },
-        Draft: { bg: "#E5E7EB", color: "#4B5563" },
-    };
-    const c = colors[status] || colors.Draft;
-    return <span className="status-badge" style={{ background: c.bg, color: c.color }}>{status}</span>;
-}
-const s = {
-    label: {
-      display: "block",
-      fontSize: 13,
-      fontWeight: 700,
-      color: "#374151",
-      marginBottom: 6,
-    },
-    overlay: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(15, 23, 42, 0.60)",
-      backdropFilter: "blur(8px)",
-      zIndex: 1000,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 20,
-    },
-    modal: {
-      width: "min(1040px, 96vw)",
-      maxHeight: "92vh",
-      background: "#fff",
-      borderRadius: 28,
-      boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
-      border: "1px solid rgba(15, 23, 42, 0.08)",
-    },
-    modalHeader: {
-      padding: "22px 28px",
-      borderBottom: "1px solid #EEF2F7",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      background: "linear-gradient(180deg, #ffffff 0%, #fbfdff 100%)",
-    },
-    modalTitle: {
-      margin: 0,
-      fontSize: 22,
-      fontWeight: 800,
-      color: "#0f172a",
-      letterSpacing: "-0.03em",
-    },
-    closeBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      border: "1px solid #E5E7EB",
-      background: "#fff",
-      fontSize: 18,
-      color: "#94A3B8",
-      cursor: "pointer",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalBody: {
-      padding: 28,
-      overflowY: "auto",
-      background: "#fff",
-    },
-    modalFooter: {
-      padding: "18px 28px",
-      borderTop: "1px solid #EEF2F7",
-      display: "flex",
-      justifyContent: "flex-end",
-      gap: 12,
-      background: "#fff",
-    },
-    formGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-      gap: 18,
-    },
-    input: {
-        width: "100%",
-        boxSizing: "border-box",
-        border: "1.5px solid #E2E8F0",
-        borderRadius: 16,
-        padding: "14px 16px",
-        fontSize: 14,
-        fontWeight: 500,
-        color: "#0f172a",
-        background: "#ffffff",
-        outline: "none",
-        transition: "all 0.2s ease",
-        boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
-        appearance: "none",
-        cursor: "pointer",
-      },
-    btnPrimary: {
-      background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
-      color: "#fff",
-      border: "none",
-      borderRadius: 14,
-      padding: "12px 18px",
-      fontSize: 14,
-      fontWeight: 700,
-      cursor: "pointer",
-      boxShadow: "0 12px 24px rgba(79, 70, 229, 0.22)",
-    },
-    btnSecondary: {
-      background: "#fff",
-      color: "#334155",
-      border: "1px solid #D1D5DB",
-      borderRadius: 14,
-      padding: "12px 18px",
-      fontSize: 14,
-      fontWeight: 700,
-      cursor: "pointer",
-      boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
-    },
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  function FormField({ label, children, span = 1 }) {
+  const handleUpdateJob = async () => {
+    try {
+      const payload = {
+        ...editForm,
+        skills: editForm.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+  
+      const res = await jobsAPI.update(`/jobs/${jobId}`, payload);
+      const updatedJob = res.data?.job || res.data || payload;
+  
+      setJobData(updatedJob);
+      setShowEdit(false);
+      toast.success("Job updated successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update job");
+    }
+  };
+  const formatSalary = (salary) => {
+    if (!salary) return "Not specified";
+    if (typeof salary === "string") return salary;
+  
+    if (typeof salary === "object") {
+      const min = salary.min ? Number(salary.min).toLocaleString() : "";
+      const max = salary.max ? Number(salary.max).toLocaleString() : "";
+      const currency = salary.currency || "₹";
+  
+      if (min && max) return `${currency}${min} - ${currency}${max}`;
+      if (min) return `${currency}${min}`;
+      if (max) return `${currency}${max}`;
+    }
+  
+    return "Not specified";
+  };
+
+  if (loading) {
     return (
-      <div style={{ gridColumn: `span ${span}` }}>
-        <label style={s.label}>{label}</label>
-        {children}
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Loading job details...
       </div>
     );
   }
+
+  if (!jobData) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Job not found
+      </div>
+    );
+  }
+  return (
+    <div className="job-details-page">
+      <style>{styles}</style>
+
+      <div className="job-details-wrapper">
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          <ArrowLeft size={16} /> Back to jobs
+        </button>
+
+        <div className="hero-card">
+          <div className="hero-left">
+            <div className="title-row">
+              <div>
+                <p className="eyebrow">Job Details</p>
+                <h1>{jobData.title}</h1>
+                <p className="subtext">{jobData.department} · {jobData.type} · {jobData.location}</p>
+              </div>
+              <StatusBadge status={jobData.status} />
+            </div>
+
+            <div className="quick-facts">
+              <Fact icon={Users} label="Applicants" value={jobData.applicants} />
+              <Fact icon={BadgeIndianRupee} label="Salary" value={formatSalary(jobData.salary)} />
+              <Fact icon={CalendarDays} label="Deadline" value={jobData.deadline} />
+              <Fact icon={MapPin} label="Location" value={jobData.location} />
+            </div>
+          </div>
+
+          <div className="hero-actions">
+            <button className="secondary-btn" onClick={() => setShowEdit(true)}>
+              <Pencil size={15} /> Edit Job
+            </button>
+            <button className="primary-btn" onClick={() => setTab("applicants")}>
+              <Eye size={15} /> View Applicants
+            </button>
+          </div>
+        </div>
+
+        <div className="tabs-row">
+          {tabs.map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                className={`tab-btn ${tab === t.id ? "active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                <Icon size={16} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="content-grid">
+          <div className="main-column">
+            {tab === "overview" && (
+              <>
+                <Panel title="Job Description">
+                  <p className="panel-text">{jobData.description}</p>
+                </Panel>
+
+                <Panel title="Requirements">
+                  <p className="panel-text">{jobData.requirements}</p>
+                </Panel>
+              </>
+            )}
+
+            {tab === "applicants" && (
+              <Panel
+                title="Applicants"
+                right={
+                  <div className="filters-inline">
+                    <div className="search-box">
+                      <Search size={16} />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search applicant..."
+                      />
+                    </div>
+                    <div className="filter-box">
+                      <Filter size={16} />
+                      <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+                        <option>All</option>
+                        <option>Applied</option>
+                        <option>Screening</option>
+                        <option>Shortlisted</option>
+                        <option>Interview</option>
+                        <option>Offer</option>
+                        <option>Hired</option>
+                        <option>Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="applicant-list">
+                  {filteredApplicants.map((applicant) => (
+                    <ApplicantCard key={applicant.id} applicant={applicant} />
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            {tab === "ai" && (
+              <Panel title="AI Hiring Insights">
+                <div className="ai-grid">
+                  <InsightCard label="Top Match" value="Aarav Sharma" desc="92% fit score based on React, JS, and UI projects." />
+                  <InsightCard label="Missing Skill Trend" value="TypeScript" desc="Most applicants miss advanced typing and state management." />
+                  <InsightCard label="Recommendation" value="Shortlist 5" desc="These candidates are highly aligned with the job description." />
+                </div>
+              </Panel>
+            )}
+          </div>
+
+          <div className="side-column">
+            <Panel title="Job Summary">
+              <div className="summary-list">
+                <SummaryItem label="Department" value={jobData.department} />
+                <SummaryItem label="Type" value={jobData.type} />
+                <SummaryItem label="Location" value={jobData.location} />
+                <SummaryItem label="Applicants" value={jobData.applicants} />
+                <SummaryItem label="Status" value={jobData.status} />
+              </div>
+            </Panel>
+
+            <Panel title="AI Matching Snapshot">
+              <div className="snapshot">
+                <div className="snapshot-ring">
+                  <span>{Math.round(filteredApplicants.reduce((a, c) => a + c.score, 0) / filteredApplicants.length || 0)}%</span>
+                </div>
+                <p className="snapshot-text">Average match score among current applicants.</p>
+              </div>
+            </Panel>
+          </div>
+        </div>
+      </div>
+      {showEdit && (
+        <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && setShowEdit(false)}>
+          <div style={s.modal}>
+            <div style={s.modalHeader}>
+              <h2 style={s.modalTitle}>Edit Job</h2>
+              <button style={s.closeBtn} onClick={() => setShowEdit(false)}>✕</button>
+            </div>
+
+            <div style={s.modalBody}>
+              <div style={s.formGrid}>
+                <FormField label="Job Title *" span={2}>
+                  <input
+                    style={s.input}
+                    name="title"
+                    value={editForm.title}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Department *">
+                  <input
+                    style={s.input}
+                    name="department"
+                    value={editForm.department}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Job Type">
+                  <input
+                    style={s.input}
+                    name="type"
+                    value={editForm.type}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Location" span={2}>
+                  <input
+                    style={s.input}
+                    name="location"
+                    value={editForm.location}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Job Description *" span={2}>
+                  <textarea
+                    style={{ ...s.input, minHeight: 100, resize: "vertical", lineHeight: 1.7 }}
+                    name="description"
+                    value={editForm.description}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Requirements" span={2}>
+                  <textarea
+                    style={{ ...s.input, minHeight: 80, resize: "vertical" }}
+                    name="requirements"
+                    value={editForm.requirements}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Skills (comma-separated)" span={2}>
+                  <input
+                    style={s.input}
+                    name="skills"
+                    value={editForm.skills}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Min Salary (₹/yr)">
+                  <input
+                    style={s.input}
+                    type="number"
+                    name="minSalary"
+                    value={editForm.minSalary}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Max Salary (₹/yr)">
+                  <input
+                    style={s.input}
+                    type="number"
+                    name="maxSalary"
+                    value={editForm.maxSalary}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Application Deadline">
+                  <input
+                    style={s.input}
+                    type="date"
+                    name="deadline"
+                    value={editForm.deadline}
+                    onChange={handleEditChange}
+                  />
+                </FormField>
+
+                <FormField label="Status">
+                  <select
+                    style={s.input}
+                    name="status"
+                    value={editForm.status}
+                    onChange={handleEditChange}
+                  >
+                    {["Active", "Draft", "Paused", "Closed"].map((st) => (
+                      <option key={st}>{st}</option>
+                    ))}
+                  </select>
+                </FormField>
+              </div>
+            </div>
+
+            <div style={s.modalFooter}>
+              <button style={s.btnSecondary} onClick={() => setShowEdit(false)}>
+                Cancel
+              </button>
+              <button style={s.btnPrimary} onClick={handleUpdateJob}>
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApplicantCard({ applicant }) {
+  const meta = stageMeta[applicant.stage] || stageMeta.Applied;
+  const Icon = meta.icon;
+
+  return (
+    <div className="applicant-card">
+      <div className="applicant-top">
+        <div>
+          <div className="applicant-name-row">
+            <h4>{applicant.name}</h4>
+            <span className="score-pill">{applicant.score}%</span>
+          </div>
+          <p className="applicant-role">{applicant.role}</p>
+        </div>
+        <span className="stage-pill" style={{ background: meta.bg, color: meta.color }}>
+          <Icon size={14} /> {applicant.stage}
+        </span>
+      </div>
+
+      <p className="applicant-summary">{applicant.summary}</p>
+
+      <div className="applicant-meta">
+        <span>📧 {applicant.email}</span>
+        <span>📍 {applicant.location}</span>
+      </div>
+
+      <div className="applicant-actions">
+        <button className="ghost-btn">View</button>
+        <button className="ghost-btn green">Shortlist</button>
+        <button className="ghost-btn red">Reject</button>
+        <button className="primary-mini-btn">Interview</button>
+      </div>
+    </div>
+  );
+}
+
+function InsightCard({ label, value, desc }) {
+  return (
+    <div className="insight-card">
+      <p>{label}</p>
+      <h4>{value}</h4>
+      <span>{desc}</span>
+    </div>
+  );
+}
+
+function SummaryItem({ label, value }) {
+  return (
+    <div className="summary-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function Panel({ title, right, children }) {
+  return (
+    <section className="panel-card">
+      <div className="panel-head">
+        <h3>{title}</h3>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Fact({ icon: Icon, label, value }) {
+  return (
+    <div className="fact-card">
+      <Icon size={16} />
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const colors = {
+    Active: { bg: "#DCFCE7", color: "#166534" },
+    Paused: { bg: "#FEF3C7", color: "#92400E" },
+    Closed: { bg: "#FEE2E2", color: "#991B1B" },
+    Draft: { bg: "#E5E7EB", color: "#4B5563" },
+  };
+  const c = colors[status] || colors.Draft;
+  return <span className="status-badge" style={{ background: c.bg, color: c.color }}>{status}</span>;
+}
+const s = {
+  label: {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#374151",
+    marginBottom: 6,
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15, 23, 42, 0.60)",
+    backdropFilter: "blur(8px)",
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modal: {
+    width: "min(1040px, 96vw)",
+    maxHeight: "92vh",
+    background: "#fff",
+    borderRadius: 28,
+    boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    border: "1px solid rgba(15, 23, 42, 0.08)",
+  },
+  modalHeader: {
+    padding: "22px 28px",
+    borderBottom: "1px solid #EEF2F7",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    background: "linear-gradient(180deg, #ffffff 0%, #fbfdff 100%)",
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: 22,
+    fontWeight: 800,
+    color: "#0f172a",
+    letterSpacing: "-0.03em",
+  },
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    border: "1px solid #E5E7EB",
+    background: "#fff",
+    fontSize: 18,
+    color: "#94A3B8",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalBody: {
+    padding: 28,
+    overflowY: "auto",
+    background: "#fff",
+  },
+  modalFooter: {
+    padding: "18px 28px",
+    borderTop: "1px solid #EEF2F7",
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 12,
+    background: "#fff",
+  },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 18,
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    border: "1.5px solid #E2E8F0",
+    borderRadius: 16,
+    padding: "14px 16px",
+    fontSize: 14,
+    fontWeight: 500,
+    color: "#0f172a",
+    background: "#ffffff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+    appearance: "none",
+    cursor: "pointer",
+  },
+  btnPrimary: {
+    background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
+    color: "#fff",
+    border: "none",
+    borderRadius: 14,
+    padding: "12px 18px",
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 12px 24px rgba(79, 70, 229, 0.22)",
+  },
+  btnSecondary: {
+    background: "#fff",
+    color: "#334155",
+    border: "1px solid #D1D5DB",
+    borderRadius: 14,
+    padding: "12px 18px",
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  },
+};
+
+function FormField({ label, children, span = 1 }) {
+  return (
+    <div style={{ gridColumn: `span ${span}` }}>
+      <label style={s.label}>{label}</label>
+      {children}
+    </div>
+  );
+}
 const styles = `
   .job-details-page {
     min-height: 100vh;

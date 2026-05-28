@@ -23,6 +23,7 @@ import PremiumLanding from "./pages/premium/premiumLanding.jsx"
 import PremiumLogin from "./pages/premium/PremiumLogin.jsx"
 import ResumeAnalysis from "./pages/premium/resumeAnalysis.jsx"
 import AiMatch from "./pages/premium/AiMatch.jsx"
+import PremiumLayout from "./components/layout/PremiumLayout.jsx"
 
 const ProtectedRoute = () => {
     const { user, loading } = useAuth()
@@ -70,9 +71,11 @@ const App = () => {
                     <Route path="/premium" element={<PremiumLanding/>}/>
                     <Route path="/premium/login" element={<PremiumLogin />} />
                     <Route element={<PremiumRoute />}>
-                        <Route path="/premium/dashboard" element={<PremiumDashboard />} />
-                        <Route path="/premium/resume-analysis" element={<ResumeAnalysis />} />
-                        <Route path="/premium/ai-match" element={<AiMatch />} />
+                        <Route path="/premium/app" element={<PremiumLayout />}>
+                             <Route index path="" element={<PremiumDashboard />} />
+                             <Route path="resume-analysis" element={<ResumeAnalysis />} />
+                             <Route path="ai-matching" element={<AiMatch />} />
+                         </Route>    
                     </Route>
                 </Routes>
             </BrowserRouter>
