@@ -17,8 +17,13 @@ import interviewRoutes from './src/routes/interview.routes.js'
 
 const app= express()
 
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://smart-ats-omega.vercel.app"
+  ];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true
 }))
 
