@@ -12,6 +12,7 @@ import Candidates from "./pages/candidates/Candidates"
 import CandidateDetail from "./pages/candidates/CandidateDetail"
 import Pipeline from "./pages/Pipeline/Pipeline.jsx"
 import Interviews from "./pages/interviews/Interviews"
+import globalResponsiveStyles from "../src/styles/responsive.js"
 
 import CompareCandidates from "./pages/candidates/CompareCandidates.jsx"
 
@@ -49,6 +50,7 @@ const PremiumRoute = () => {
 const App = () => {
     return (
         <AuthProvider>
+                <style>{globalResponsiveStyles}</style>
             <BrowserRouter>
                 <Toaster position="top-right" />
                 <Routes>
