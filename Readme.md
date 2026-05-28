@@ -29,17 +29,7 @@
 
 The platform combines resume parsing, semantic candidate evaluation, explainable AI scoring, and recruiter-friendly workflows into a single cohesive product.
 
----
-
 ## Live Demo
-
-| Version | URL | Credentials |
-|---------|-----|-------------|
-| Default (Light) | `https://your-app.vercel.app` | admin@test.com / password123 |
-| Premium (Dark)  | `https://your-app.vercel.app/premium` | admin@test.com / password123 |
-| API Base URL    | `https://your-api.onrender.com/api` | — |
-
----
 
 ## Features
 

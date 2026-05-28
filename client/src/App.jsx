@@ -20,11 +20,11 @@ import CompareCandidates from "./pages/candidates/CompareCandidates.jsx"
 // premium
 import PremiumGate from "./components/UI/PremiumGate.jsx"
 import PremiumDashboard from "./pages/premium/PremiumDashboard.jsx"
-import PremiumLanding from "./pages/premium/premiumLanding.jsx"
 import PremiumLogin from "./pages/premium/PremiumLogin.jsx"
-import ResumeAnalysis from "./pages/premium/resumeAnalysis.jsx"
+import ResumeAnalysis from "./pages/premium/ResumeAnalysis.jsx"
 import AiMatch from "./pages/premium/AiMatch.jsx"
 import PremiumLayout from "./components/layout/PremiumLayout.jsx"
+import PremiumLanding from "./pages/premium/premiumLanding.jsx"
 
 const ProtectedRoute = () => {
     const { user, loading } = useAuth()
