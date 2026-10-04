@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import crypto from "crypto"
 
 export const hashPassword= async(password)=>{
     return bcrypt.hash(password,10)
@@ -19,7 +20,7 @@ export const generateAccessToken= async (user)=>{
 export const generateRefreshToken=async (user)=>{
     return jwt.sign({_id : user._id, role: user.role}, 
                  process.env.REFRESH_TOKEN_SECRET_KEY, 
-                 {expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d"}
+                 {expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",jwtid: crypto.randomUUID()}
              )
  }
 
@@ -29,14 +30,14 @@ export const generateRefreshToken=async (user)=>{
  export const hashToken= async (token)=>{
     if(!token) throw new Error("token is missing")
 
-    return bcrypt.hash(token,10)
+    return crypto.createHash("sha256").update(token).digest('hex')
  }  
 
- export const setRefreshCookie =(res,token)=>{
+ export const setRefreshCookie = (res, token) => {
     res.cookie("refreshToken", token, {
-        httpOnly : true,
-        secure: process.env.NODE_ENV=== "production",
-        sameSite: "strict",
-        maxAge: 7*24*60*60*1000
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000
     })
- }
+}

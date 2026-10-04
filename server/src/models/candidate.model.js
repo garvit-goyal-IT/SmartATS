@@ -20,6 +20,12 @@ const candidateSchema= new mongoose.Schema({
         }
     },
 
+    companyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "company",
+        required: true
+    },
+    
     resumeUrl: {
         type: String,
         default: ""

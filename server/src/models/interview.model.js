@@ -29,6 +29,11 @@ const interviewSchema = new mongoose.Schema(
         type: String, 
         default: "" 
     },
+    companyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "company",
+        required: true
+    },
     status: {
         type: String,
         enum: ["scheduled", "completed", "cancelled", "rescheduled"],

@@ -4,7 +4,7 @@ import { verifyAccessToken } from "../utils/jwt.utils.js";
 export const protect= async (req,res,next)=>{
     const authHeader= req.headers.authorization
 
-    if(!authHeader?.startsWith("Bearer")){
+    if(!authHeader?.startsWith("Bearer ")){
         return res.status(401).json({
             message: "Not Authenticated"
         })
@@ -16,7 +16,7 @@ export const protect= async (req,res,next)=>{
         const decoded= verifyAccessToken(token)
     
         const user= await User.findById(decoded._id)
-        if(!user){
+        if(!user || !user.isActive){
             return res.status(401).json({
                 message: "user no longer exist"
             })
@@ -32,7 +32,7 @@ export const protect= async (req,res,next)=>{
 
 export const authorizeRole = (...roles)=>{
     return (req,res,next)=>{
-        if(!roles.includes(req.user.role)){
+        if(!req.user || !roles.includes(req.user.role)){
             return res.status(403).json({
                 message: "You are not authorized to access this resource"
             })

@@ -1,6 +1,7 @@
 import Application from "../models/application.model.js"
 import Candidate from "../models/candidate.model.js"
 import Job from "../models/job.model.js"
+import Company from "../models/company.model.js"
 import { scoreCandidateWithAI, getShortlistSuggestions as getAISuggestions,compareCandidatesWithAI } from "../services/ai.service.js"
 import { 
     sendApplicationReceived, 
@@ -9,27 +10,107 @@ import {
 } from "../services/email.service.js"
 
 
+const TRANSITIONS = {
+    applied:             ["screening", "rejected"],
+    screening:           ["shortlisted", "rejected"],
+    shortlisted:         ["interview_scheduled", "rejected"],
+    interview_scheduled: ["interviewed", "rejected"],
+    interviewed:         ["rejected"],
+}
+
+export const updateStatus = async (req, res) => {
+    const { status } = req.body
+    try {
+        const app = await Application.findOne({ _id: req.params.applicationId, companyId: req.user.companyId })
+        if (!app) return res.status(404).json({ message: "Application not found" })
+
+        if (!TRANSITIONS[app.status]?.includes(status)) {
+            return res.status(400).json({ message: `Cannot move from ${app.status} to ${status}` })
+        }
+
+        app.statusHistory.push({ from: app.status, to: status, by: req.user._id })
+        app.status = status
+        await app.save()
+        return res.status(200).json({ success: true, application: app })
+    } catch (error) {
+        console.error("Error updating status:", error)
+        return res.status(500).json({ message: "Internal server error" })
+    }
+}
+
+export const sendOffer = async (req, res) => {
+    const { salary, joiningDate, message } = req.body
+    try {
+        // The status condition inside the filter makes this atomic, so double clicks can't send two offers
+        const app = await Application.findOneAndUpdate(
+            { _id: req.params.applicationId, companyId: req.user.companyId, status: "interviewed" },
+            {
+                $set: {
+                    status: "offer_sent",
+                    "offer.status": "sent",
+                    "offer.sentBy": req.user._id,
+                    "offer.sentAt": new Date(),
+                    "offer.salary": salary,
+                    "offer.joiningDate": joiningDate,
+                    "offer.message": message,
+                },
+                $push: { statusHistory: { from: "interviewed", to: "offer_sent", by: req.user._id } },
+            },
+            { new: true, runValidators: true }
+        )
+        if (!app) return res.status(409).json({ message: "Application not found or not in 'interviewed' stage" })
+        return res.status(200).json({ success: true, message: "Offer sent", application: app })
+    } catch (error) {
+        console.error("Error sending offer:", error)
+        return res.status(500).json({ message: "Internal server error" })
+    }
+}
+
+export const recordOfferResponse = async (req, res) => {
+    const { decision } = req.body // "accepted" | "declined"
+    if (!["accepted", "declined"].includes(decision)) {
+        return res.status(400).json({ message: "Invalid decision" })
+    }
+    const newStatus = decision === "accepted" ? "hired" : "rejected"
+    try {
+        const app = await Application.findOneAndUpdate(
+            { _id: req.params.applicationId, companyId: req.user.companyId, status: "offer_sent" },
+            {
+                $set: { status: newStatus, "offer.status": decision, "offer.respondedAt": new Date() },
+                $push: { statusHistory: { from: "offer_sent", to: newStatus, by: req.user._id } },
+            },
+            { new: true }
+        )
+        if (!app) return res.status(409).json({ message: "No pending offer found" })
+        return res.status(200).json({ success: true, application: app })
+    } catch (error) {
+        console.error("Error recording response:", error)
+        return res.status(500).json({ message: "Internal server error" })
+    }
+}
+
 export const createApplication = async (req, res) => {
     try {
         const { candidateId, jobId } = req.body
+        const companyId = req.user.companyId
 
-        const candidate = await Candidate.findById(candidateId)
-        if(!candidate) return res.status(404).json({ message: "Candidate not found" })
+        const candidate = await Candidate.findOne({ _id: candidateId, companyId })
+        if (!candidate) return res.status(404).json({ message: "Candidate not found" })
 
-        const job = await Job.findById(jobId)
-        if(!job) return res.status(404).json({ message: "Job not found" })
+        const job = await Job.findOne({ _id: jobId, companyId, status: "open" })
+        if (!job) return res.status(404).json({ message: "Job not found" })
 
-        const existing = await Application.findOne({ candidate: candidateId, job: jobId })
-        if(existing) return res.status(400).json({ message: "Candidate already applied to this job" })
+        const existing = await Application.findOne({ candidate: candidateId, job: job._id })
+        if (existing) return res.status(400).json({ message: "Candidate already applied to this job" })
 
-
-        const data = Array.isArray(candidate.parsedData) ? candidate.parsedData[0] : candidate.parsedData;
+        const data = Array.isArray(candidate.parsedData) ? candidate.parsedData[0] : candidate.parsedData
         const aiResult = await scoreCandidateWithAI(data, job)
 
         const application = await Application.create({
             candidate: candidateId,
-            job:       jobId,
-            fitScore:  aiResult.fitScore,
+            job: job._id,
+            companyId: job.companyId,          
+            status: "applied",
             aiAnalysis: {
                 matchedSkills:  aiResult.matchedSkills,
                 missingSkills:  aiResult.missingSkills,
@@ -39,39 +120,48 @@ export const createApplication = async (req, res) => {
                 recommendation: aiResult.recommendation,
                 keywords:       candidate.keywords
             },
-            status: "applied"
+            statusHistory: [{ from: null, to: "applied", by: req.user._id }]
         })
 
-        if(candidate.personalInfo?.email) {
-            await sendApplicationReceived({
-                candidateName:  candidate.personalInfo.name,
-                candidateEmail: candidate.personalInfo.email,
+        await Job.updateOne({ _id: job._id, companyId }, { $inc: { applicantCount: 1 } })
+
+        try {
+            const company = await Company.findById(companyId).select("name").lean()
+            if (candidate.personalInfo?.email) {
+                await sendApplicationReceived({
+                    candidateName:  candidate.personalInfo.name,
+                    candidateEmail: candidate.personalInfo.email,
+                    jobTitle:       job.title,
+                    companyName:    company?.name
+                })
+            }
+            await sendRecruiterNotification({
+                recruiterEmail: req.user.email,
+                recruiterName:  req.user.name,
+                candidateName:  candidate.personalInfo?.name,
                 jobTitle:       job.title,
-                companyName:    req.user.company
+                fitScore:       aiResult.fitScore
             })
+        } catch (mailError) {
+            console.error("Email failed (application was saved):", mailError.message)
         }
-        await sendRecruiterNotification({
-            recruiterEmail: req.user.email,
-            recruiterName:  req.user.name,
-            candidateName:  candidate.personalInfo.name,
-            jobTitle:       job.title,
-            fitScore:       aiResult.fitScore
-        })
-
-        await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } })
 
         return res.status(201).json({
-            success:    true,
-            message:    "Application created with AI scoring",
-            application,
-            aiAnalysis: aiResult
+            success: true,
+            message: "Application created with AI scoring",
+            application
         })
 
-    } catch(error) {
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Candidate already applied to this job" })
+        }
         console.error("Application error:", error)
-        return res.status(500).json({ message: "Internal server error", error: error.message })
+        return res.status(500).json({ message: "Internal server error" })
     }
 }
+
+
 export const getApplicationsByCandidate = async (req, res) => {
     try {
         const { candidateId } = req.params

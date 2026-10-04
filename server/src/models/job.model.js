@@ -32,6 +32,13 @@ const jobSchema = new mongoose.Schema(
         enum: ["full-time", "internship", "part-time","contract"]
     },
 
+    companyId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "company",
+        required: true,
+        index: true
+    },
+
     salary: {
         min:      { type: Number, default: 0 },
         max:      { type: Number, default: 0 },
@@ -52,7 +59,7 @@ const jobSchema = new mongoose.Schema(
          enum: ["open", "closed","on_hold"], 
          default: "open"
      },
-    postedBy: { 
+    createdBy: { 
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
         required: true

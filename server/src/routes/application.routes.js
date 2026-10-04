@@ -7,7 +7,10 @@ import {
     getShortlistSuggestions,
     generateQuestions,
     compareApplications,
-    getApplicationsByCandidate
+    getApplicationsByCandidate,
+    updateStatus,
+    sendOffer,
+    recordOfferResponse
 } from "../controllers/application.controller.js"
 
 const router = express.Router()
@@ -19,5 +22,9 @@ router.get("/job/:jobId/shortlist",      protect, getShortlistSuggestions)
 router.get("/:applicationId/questions", protect,  generateQuestions)
 router.post("/compare", protect, compareApplications)
 router.get("/candidate/:candidateId", protect, getApplicationsByCandidate)
+
+router.patch("/:applicationId/status", protect, authorizeRole("recruiter", "hiring_manager"), updateStatus)
+router.post("/:applicationId/offer", protect, authorizeRole("hiring_manager"), sendOffer)
+router.patch("/:applicationId/offer/response", protect, authorizeRole("hiring_manager"), recordOfferResponse)
 
 export default router
