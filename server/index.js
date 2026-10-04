@@ -11,7 +11,6 @@ import cookieParser from 'cookie-parser'
 import cors from "cors"
 
 
-app.set("trust proxy", 1)
 
 import authRoutes from './src/routes/auth.routes.js'
 import jobRoutes from './src/routes/job.routes.js'
@@ -20,6 +19,9 @@ import applicationRoutes from './src/routes/application.routes.js'
 import interviewRoutes from './src/routes/interview.routes.js'
 
 const app= express()
+
+app.set("trust proxy", 1)
+
 
   app.use(cors({
     origin: process.env.CLIENT_URL,

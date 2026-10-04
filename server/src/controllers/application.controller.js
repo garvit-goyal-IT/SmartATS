@@ -164,47 +164,36 @@ export const createApplication = async (req, res) => {
 
 export const getApplicationsByCandidate = async (req, res) => {
     try {
-        const { candidateId } = req.params
-        const applications = await Application.find({ candidate: candidateId })
+        const applications = await Application.find({
+            candidate: req.params.candidateId,
+            companyId: req.user.companyId
+        })
             .populate("job", "title")
-            .sort({ fitScore: -1 })
+            .sort({ "aiAnalysis.fitScore": -1 })
+            .lean()
 
         return res.status(200).json({ success: true, applications })
-    } catch(error) {
+    } catch (error) {
+        console.error("getApplicationsByCandidate error:", error)
         return res.status(500).json({ message: "Internal server error" })
     }
 }
 
 export const getApplicationsByJob = async (req, res) => {
     try {
-        const { jobId } = req.params
-        console.log("Fetching applications for job:", jobId)
-
-        const applications = await Application.find({ job: jobId })
-        console.log("Raw applications found:", applications.length)
-
-        const populated = await Application.find({ job: jobId })
-            .populate({
-                path: "candidate",
-                select: "personalInfo parsedData keywords"
-            })
+        const applications = await Application.find({
+            job: req.params.jobId,
+            companyId: req.user.companyId
+        })
+            .populate("candidate", "personalInfo parsedData keywords")
             .populate("job", "title requirements")
-            .sort({ fitScore: -1 })
+            .sort({ "aiAnalysis.fitScore": -1 })
+            .lean()
 
-        console.log("Populated successfully:", populated.length)
-
-        return res.status(200).json({ 
-            success: true, 
-            count: populated.length, 
-            applications: populated
-        })
-    } catch(error) {
-        console.error("getApplicationsByJob error:", error.message)
-        console.error("Full error:", error)
-        return res.status(500).json({ 
-            message: "Internal server error", 
-            error: error.message
-        })
+        return res.status(200).json({ success: true, count: applications.length, applications })
+    } catch (error) {
+        console.error("getApplicationsByJob error:", error)
+        return res.status(500).json({ message: "Internal server error" })
     }
 }
 

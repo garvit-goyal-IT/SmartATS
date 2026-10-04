@@ -4,7 +4,9 @@ import { hashPassword, generateAccessToken, generateRefreshToken, comparePasswor
 
 
 export const register = async (req, res) => {
-    const { name, email, password, companyName } = req.body;
+    
+    const { name, email, password } = req.body;
+    const companyName = req.body.company;
 
     if (!email || !password || !name || !companyName) {
         return res.status(400).json({ message: "Please provide all required fields" });
