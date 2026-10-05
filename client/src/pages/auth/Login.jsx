@@ -63,7 +63,7 @@ const Login = () => {
                         Hire Smarter<br />with AI
                     </h1>
                     <p style={{ color: "#94a3b8", fontSize: "18px", lineHeight: "1.7", marginBottom: "40px" }}>
-                        Transform your recruitment process with intelligent candidate matching, automated screening, and explainable AI recommendations.
+                        Transform your recruitment process with intelligent candidate matching and automated screening.
                     </p>
 
                     {/* Features */}
