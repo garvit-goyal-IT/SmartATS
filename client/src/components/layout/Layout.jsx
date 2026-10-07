@@ -10,12 +10,17 @@ const navItems = [
     { path: "/candidates", label: "Candidates", icon: "👥" },
     { path: "/pipeline", label: "Pipeline", icon: "🔄" },
     { path: "/interviews", label: "Interviews", icon: "📅" },
+    { path: "/team", label: "Team", icon: "🧑‍💼", roles: ["admin"] },
 ]
 
 const Layout = () => {
     const [collapsed, setCollapsed] = useState(false)
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+
+    const visibleItems = navItems.filter(
+        item => !item.roles || item.roles.includes(user?.role)
+    )
 
     const handleLogout = async () => {
         await logout()
@@ -87,7 +92,7 @@ const Layout = () => {
 
                 {/* Nav items */}
                 <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {navItems.map(item => (
+                    {visibleItems.map(item => (
                         <NavLink
                             key={item.path}
                             to={item.path}

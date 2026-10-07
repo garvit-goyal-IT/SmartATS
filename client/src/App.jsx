@@ -13,7 +13,7 @@ import CandidateDetail from "./pages/candidates/CandidateDetail"
 import Pipeline from "./pages/Pipeline/Pipeline.jsx"
 import Interviews from "./pages/interviews/Interviews"
 import globalResponsiveStyles from "../src/styles/responsive.js"
-
+import Team from "./pages/team/Team.jsx"
 import CompareCandidates from "./pages/candidates/CompareCandidates.jsx"
 
 
@@ -66,6 +66,7 @@ const App = () => {
                             <Route path="candidates/:id" element={<CandidateDetail />} />
                             <Route path="pipeline" element={<Pipeline />} />
                             <Route path="interviews" element={<Interviews />} />
+                            <Route path="/team" element={<Team />} />
                         </Route>
                         <Route path="compare" element={<CompareCandidates />} />
                         <Route path="bulk upload" element={<PremiumGate feature="Bulk Resume Upload" />} />

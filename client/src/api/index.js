@@ -47,6 +47,11 @@ export const aiAPI = {
     generateJobDesc:     (data)          => api.post(`/jobs/${data.jobId}/generate-description`, data),
 }
 
+export const teamAPI = {
+    getAll: () => api.get("/auth/users"),
+    create: (data) => api.post("/auth/users", data),
+  }
+
 compare: (data) => api.post("/applications/compare", data)
 
 upload: (formData, jobId) => api.post(`/candidates/upload?jobId=${jobId}`, formData, {
