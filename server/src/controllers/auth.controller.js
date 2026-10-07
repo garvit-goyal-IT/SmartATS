@@ -126,8 +126,8 @@ export const login = async (req, res) => {
 }
 
 export const getMe = async (req, res) => {
-    const user = req.user
-
+    const company = await Company.findById(req.user.companyId).select("name").lean()
+    const user = { ...req.user.toObject(), company: company?.name }
     return res.status(200).json({ success: true, message: "user fetched successfully", user })
 }
 
@@ -188,3 +188,11 @@ export const logout = async (req, res) => {
 
     return res.status(200).json({ success: true, message: "user logged out successfully" })
 }
+
+export const listCompanyUsers = async (req, res) => {
+    const users = await User.find({ companyId: req.user.companyId })
+      .select("name email role isActive createdAt")
+      .sort({ createdAt: -1 })
+      .lean()
+    return res.status(200).json({ success: true, users })
+  }

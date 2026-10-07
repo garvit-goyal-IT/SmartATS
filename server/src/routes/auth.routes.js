@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { login, register, getMe,logout, refreshToken, createCompanyUser} from '../controllers/auth.controller.js';
+import { login, register, getMe,logout, refreshToken, createCompanyUser ,listCompanyUsers} from '../controllers/auth.controller.js';
 import { authorizeRole, protect } from '../middlewares/auth.middleware.js';
 
 const router= express.Router();
@@ -17,6 +17,10 @@ router.post("/logout", protect, logout)
 router.post("/refresh", refreshToken)
 
 router.post('/users', protect, authorizeRole("admin"),createCompanyUser)
+
+router.post("/users", protect, authorizeRole("admin"), createCompanyUser)
+
+router.get("/users", protect, authorizeRole("admin"), listCompanyUsers)
 
 
 export default router
