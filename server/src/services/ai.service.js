@@ -4,20 +4,20 @@ const getAI = () => new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 // ─── Helper ───────────────────────────────────────────────
 const askGroq = async (prompt) => {
-    const ai = getAI()
-    const response = await ai.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1
-    })
-    const raw = response.choices[0].message.content
-    const cleaned = raw.replace(/```json|```/g, "").trim()
-    return JSON.parse(cleaned)
+  const ai = getAI()
+  const response = await ai.chat.completions.create({
+    model: process.env.GROQ_MODEL,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.1
+  })
+  const raw = response.choices[0].message.content
+  const cleaned = raw.replace(/```json|```/g, "").trim()
+  return JSON.parse(cleaned)
 }
 
 // ─── Resume Parser ────────────────────────────────────────
 export const parseResumeWithAI = async (resumeText) => {
-    const prompt = `
+  const prompt = `
 You are an expert HR assistant. Extract structured information from this resume.
 Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
 
@@ -52,16 +52,16 @@ Return exactly this structure:
   "keywords": ["keyword1", "keyword2"]
 }
 `
-    return await askGroq(prompt)
+  return await askGroq(prompt)
 }
 
 // ─── Candidate Scorer ─────────────────────────────────────
 export const scoreCandidateWithAI = async (parsedResume, job) => {
-    
-    // handle array or object
-    const data = Array.isArray(parsedResume) ? parsedResume[0] : parsedResume
 
-    const prompt = `
+  // handle array or object
+  const data = Array.isArray(parsedResume) ? parsedResume[0] : parsedResume
+
+  const prompt = `
 You are an expert technical recruiter. Score this candidate for the job.
 Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
 
@@ -88,41 +88,41 @@ Return exactly this structure:
   "shortlistSuggestion": true
 }
 `
-    return await askGroq(prompt)
+  return await askGroq(prompt)
 }
 
 // ─── Duplicate Detector ───────────────────────────────────
 export const checkDuplicate = async (Candidate, personalInfo) => {
-    const byEmail = await Candidate.findOne({
-        "personalInfo.email": personalInfo.email
+  const byEmail = await Candidate.findOne({
+    "personalInfo.email": personalInfo.email
+  })
+  if (byEmail) return { isDuplicate: true, duplicateOf: byEmail._id }
+
+  if (personalInfo.phone) {
+    const byPhone = await Candidate.findOne({
+      "personalInfo.phone": personalInfo.phone
     })
-    if(byEmail) return { isDuplicate: true, duplicateOf: byEmail._id }
+    if (byPhone) return { isDuplicate: true, duplicateOf: byPhone._id }
+  }
 
-    if(personalInfo.phone) {
-        const byPhone = await Candidate.findOne({
-            "personalInfo.phone": personalInfo.phone
-        })
-        if(byPhone) return { isDuplicate: true, duplicateOf: byPhone._id }
-    }
-
-    return { isDuplicate: false, duplicateOf: null }
+  return { isDuplicate: false, duplicateOf: null }
 }
 
 // ─── Keyword Extractor ────────────────────────────────────
 export const extractKeywords = async (text) => {
-    const prompt = `
+  const prompt = `
 Extract the top 15 professional keywords from this resume.
 Return ONLY a JSON array of strings. No explanation, no markdown.
 Example: ["React", "Node.js", "MongoDB"]
 
 Resume: ${text.substring(0, 2000)}
 `
-    return await askGroq(prompt)
+  return await askGroq(prompt)
 }
 
 // ─── Smart Shortlisting ───────────────────────────────────
 export const getShortlistSuggestions = async (applications) => {
-    const prompt = `
+  const prompt = `
 You are a recruiter assistant. From these candidates suggest the top ones to shortlist.
 Return ONLY a JSON array. No explanation, no markdown.
 
@@ -136,7 +136,7 @@ Return exactly this structure:
   }
 ]
 `
-    return await askGroq(prompt)
+  return await askGroq(prompt)
 }
 
 export const generateInterviewQuestions = async (job, candidate) => {

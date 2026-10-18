@@ -8,7 +8,7 @@ const router = express.Router()
 router.post(
     "/upload",
     protect,
-    authorizeRole("admin", "recruiter"),
+    authorizeRole("recruiter","hiring_manager"),
     upload.single("resume"),
     uploadResume
 )

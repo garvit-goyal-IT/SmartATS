@@ -64,7 +64,7 @@ const applicationSchema= new mongoose.Schema({
   { timestamps: true }
 )
 
-
+applicationSchema.index({ companyId: 1, _id: 1 })
 applicationSchema.index({ candidate: 1, job: 1 }, { unique: true })
 applicationSchema.index({ companyId: 1, job: 1, status: 1 })
 

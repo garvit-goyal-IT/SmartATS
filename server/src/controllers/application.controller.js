@@ -13,7 +13,7 @@ import {
 const TRANSITIONS = {
     applied:             ["screening", "rejected"],
     screening:           ["shortlisted", "rejected"],
-    shortlisted:         ["interview_scheduled", "rejected"],
+    shortlisted:         [ "rejected"],
     interview_scheduled: ["interviewed", "rejected"],
     interviewed:         ["rejected"],
 }
@@ -21,16 +21,20 @@ const TRANSITIONS = {
 export const updateStatus = async (req, res) => {
     const { status } = req.body
     try {
-        const app = await Application.findOne({ _id: req.params.applicationId, companyId: req.user.companyId })
-        if (!app) return res.status(404).json({ message: "Application not found" })
-
-        if (!TRANSITIONS[app.status]?.includes(status)) {
-            return res.status(400).json({ message: `Cannot move from ${app.status} to ${status}` })
-        }
-
-        app.statusHistory.push({ from: app.status, to: status, by: req.user._id })
-        app.status = status
-        await app.save()
+        const app = await Application.findOneAndUpdate(
+            {
+                _id: req.params.applicationId,
+                companyId: req.user.companyId,
+                status: { $in: Object.keys(TRANSITIONS).filter(s => TRANSITIONS[s].includes(status)) },
+            },
+            {
+                $set: { status },
+                $push: { statusHistory: { to: status, by: req.user._id } },
+            },
+            { new: true, projection: { status: 1 } }
+        ).lean()
+        
+        if (!app) return res.status(400).json({ message: "Invalid move or application not found" })
         return res.status(200).json({ success: true, application: app })
     } catch (error) {
         console.error("Error updating status:", error)

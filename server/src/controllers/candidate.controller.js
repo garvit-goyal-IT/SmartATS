@@ -16,14 +16,29 @@ export const uploadResume = async (req, res) => {
     await parser.destroy()
     const resumeText = result.text
 
-    const parsedData = await parseResumeWithAI(resumeText)
-    return res.status(200).json({ success: true, resumeText, parsedData })
+    const aiResponse = await parseResumeWithAI(resumeText)
+    const data = Array.isArray(aiResponse) ? aiResponse[0] : aiResponse
+
+    const candidate = await Candidate.create({
+      personalInfo: data.personalInfo || {},
+      resumeText,
+      parsedData: {
+        skills: data.skills || [],
+        experience: data.experience || [],
+        education: data.education || [],
+        totalExperience: data.totalExperience || 0,
+      },
+      keywords: data.keywords || data.skills || [],
+      companyId: req.user.companyId,
+      uploadedBy: req.user._id,
+    })
+
+    return res.status(200).json({ success: true, candidate })
   } catch (error) {
     console.error("Resume upload error:", error)
     return res.status(500).json({ success: false, message: "Resume parsing failed" })
   }
 }
-
 export const getAllCandidates = async (req, res) => {
   try {
     const { search, isDuplicate } = req.query
