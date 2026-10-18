@@ -55,6 +55,7 @@ const Candidates = () => {
             fileRef.current.value = ""
             fetchData()
         } catch(err) {
+            console.error("Upload error:", err)
             toast.error(err.response?.data?.message || "Upload failed")
         } finally {
             setUploading(false)

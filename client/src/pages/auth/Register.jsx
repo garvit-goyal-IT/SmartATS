@@ -135,7 +135,7 @@ const Register = () => {
                         {[
                             { label: "Full name",    name: "name",     type: "text",     placeholder: "John Doe" },
                             { label: "Work email",   name: "email",    type: "email",    placeholder: "you@company.com" },
-                            { label: "Password",     name: "password", type: "password", placeholder: "Min. 8 characters" },
+                            { label: "Password",     name: "password", type: "password", placeholder: "Min 5 characters" },
                             { label: "Company name", name: "company",  type: "text",     placeholder: "Acme Inc." },
                         ].map(field => (
                             <div key={field.name} style={{ marginBottom: "20px" }}>
@@ -163,7 +163,7 @@ const Register = () => {
                             </div>
                         ))}
 
-                        <div style={{ marginBottom: "28px" }}>
+                        {/* <div style={{ marginBottom: "28px" }}>
                             <label style={{
                                 display: "block", fontSize: "14px",
                                 fontWeight: "600", color: "#374151",
@@ -188,7 +188,7 @@ const Register = () => {
                                 <option value="hiring_manager">Hiring Manager</option>
                                 <option value="admin">Admin</option>
                             </select>
-                        </div>
+                        </div> */}
 
                         <button
                             type="submit"

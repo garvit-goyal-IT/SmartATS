@@ -33,6 +33,8 @@ export const applicationsAPI = {
     getByJob:       (jobId) => api.get(`/applications/job/${jobId}`),
     updateStatus:   (id, data) => api.patch(`/applications/${id}/status`, data),
     getShortlist:   (jobId) => api.get(`/applications/job/${jobId}/shortlist`),
+    sendOffer: (id, data) => api.post(`/applications/${id}/offer`, data),
+    offerResponse: (id, data) => api.patch(`/applications/${id}/offer/response`, data),
 }
 
 // ─── Interviews ───────────────────────────────────────

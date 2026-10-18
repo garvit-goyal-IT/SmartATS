@@ -181,6 +181,7 @@ const Layout = () => {
             <div style={{
                 marginLeft: collapsed ? "72px" : "260px",
                 flex: 1,
+                minWidth: 0,              // add this line
                 transition: "margin-left 0.2s ease",
                 display: "flex",
                 flexDirection: "column",
