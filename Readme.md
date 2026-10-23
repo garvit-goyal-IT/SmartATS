@@ -26,8 +26,8 @@ The platform combines resume parsing, semantic candidate evaluation, explainable
 https://smart-ats-omega.vercel.app
 
 ## Login credentials 
-email = admin2@test.com
-password= admin2
+id- garvit@apple.com
+pass- apple
 
 ## Features
 
